@@ -6,7 +6,7 @@ Question title.
 
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 
-## <a name="#primes"></a>Build `checking-uniqueness-of-shifting-sieve-of-eratosthenes`
+## <a name="#primes"></a>`checking-uniqueness-of-shifting-sieve-of-eratosthenes`
 
 ```
 git clone git@github.com:cpp-core/so.git
@@ -14,4 +14,7 @@ mkdir so/checking-uniqueness-of-shifting-sieve-of-eratosthenes/build
 cd so/checking-uniqueness-of-shifting-sieve-of-eratosthenes/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
 make primes && ./bin/primes
+ sieve_index:   187 ms
+    sieve_2n:     0 ms
+    sieve_6n:     0 ms
 ```
