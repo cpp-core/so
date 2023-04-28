@@ -8,6 +8,21 @@ Question title.
 
 ## <a name="#primes"></a>`checking-uniqueness-of-shifting-sieve-of-eratosthenes`
 
+If you need to install a particular versionn of clang for a build on Ubuntu, you
+can do something like the following:
+
+```
+apt install -y clang-15 libc++-15-dev libc++abi-15-dev
+```
+
+On older versions of Ubuntu (e.g. 20.04), you may have to point to the
+clang packages before installing with something like:
+
+```
+wget https://apt.llvm.org/llvm.sh
+./llvm.sh 15
+```
+
 ```
 git clone git@github.com:cpp-core/so.git
 mkdir so/checking-uniqueness-of-shifting-sieve-of-eratosthenes/build
