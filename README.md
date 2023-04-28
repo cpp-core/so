@@ -6,8 +6,6 @@ Question title.
 
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 
-## <a name="#primes"></a>`checking-uniqueness-of-shifting-sieve-of-eratosthenes`
-
 If you need to install a particular versionn of clang for a build on Ubuntu, you
 can do something like the following:
 
@@ -22,6 +20,8 @@ clang packages before installing with something like:
 wget https://apt.llvm.org/llvm.sh
 ./llvm.sh 15
 ```
+
+## <a name="#primes"></a>`checking-uniqueness-of-shifting-sieve-of-eratosthenes`
 
 ```
 git clone git@github.com:cpp-core/so.git
