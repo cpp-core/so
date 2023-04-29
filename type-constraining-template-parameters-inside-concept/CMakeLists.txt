@@ -34,6 +34,7 @@ add_link_options(-stdlib=libc++)
 
 foreach(prog
     static_assert
+    static_assert_v2
     )
   add_executable(${prog} src/${prog}.cpp)
   target_link_libraries(${prog})
