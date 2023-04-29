@@ -23,7 +23,7 @@ wget https://apt.llvm.org/llvm.sh
 ./llvm.sh 15
 ```
 
-## <a name="primes"></a>`checking-uniqueness-of-shifting-sieve-of-eratosthenes`
+## <a name="primes"></a> Checking uniqueness of shifting sieve of eratosthenes
 
 ```
 git clone git@github.com:cpp-core/so.git
@@ -36,7 +36,7 @@ make primes && ./bin/primes
     sieve_6n:     0 ms
 ```
 
-## <a name="rshift"></a>`c++-bitwise-shift-of-long-long-int-in-vector-for-example-by-380b-bits`
+## <a name="rshift"></a> C++ Bitwise shift of uint64_t in vector
 
 ```
 git clone git@github.com:cpp-core/so.git
@@ -49,7 +49,7 @@ make right_shift && ./bin/right_shift -n 128 -m 37
 
 ```
 
-## <a name="static-assert"></a>`type-contraining-template-parameters-inside-concept`
+## <a name="static-assert"></a> Type constraining template parameters inside concept
 
 ```
 git clone git@github.com:cpp-core/so.git
