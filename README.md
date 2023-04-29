@@ -1,7 +1,7 @@
 # Stack Overflow Code
 
-This repo contains code related to Stack Overflow answers. The code
-related to each answer is in an independent directory named after the
+This repo contains code related to Stack Overflow Questions and Answers. The code
+related to each Question is in an independent directory named after the
 Question title.
 
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
