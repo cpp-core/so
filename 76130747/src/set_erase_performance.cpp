@@ -46,12 +46,6 @@ int tool_main(int argc, const char *argv[]) {
     });
 
     data = src_data;
-    measure(cout, "value-ordered", [&]() { ;
-	    for (auto value : elements)
-		data.erase(value);
-    });
-
-    data = src_data;
     for (auto i = 0; i < n; ++i)
 	iterators[i] = data.find(i);
     std::reverse(iterators.begin(), iterators.end());
@@ -61,19 +55,25 @@ int tool_main(int argc, const char *argv[]) {
     });
 
     data = src_data;
-    std::reverse(elements.begin(), elements.end());
-    measure(cout, "value-reverse", [&]() { ;
-	    for (auto value : elements)
-		data.erase(value);
-    });
-    
-    data = src_data;
     for (auto i = 0; i < n; ++i)
 	iterators[i] = data.find(i);
     std::shuffle(iterators.begin(), iterators.end(), core::rng());
     measure(cout, "iterator-random", [&]() {
 	for (auto iter : iterators)
 	    data.erase(iter);
+    });
+    
+    data = src_data;
+    measure(cout, "value-ordered", [&]() { ;
+	    for (auto value : elements)
+		data.erase(value);
+    });
+
+    data = src_data;
+    std::reverse(elements.begin(), elements.end());
+    measure(cout, "value-reverse", [&]() { ;
+	    for (auto value : elements)
+		data.erase(value);
     });
     
     data = src_data;
