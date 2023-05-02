@@ -1,41 +1,63 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
+#include <fmt/format.h>
 #include "core/util/tool.h"
 #include "core/chrono/stopwatch.h"
 #include "core/util/random.h"
 
-auto rotate_right_window(uint64_t value, size_t n) {
-    auto lower = value >> 1;
-    auto upper = value << (n - 1);
-    auto mask = (uint64_t{1} << n) - 1;
-    return (lower bitor upper) bitand mask;
+uint64_t linear_congruent_generator(uint64_t n) {
+    // constexpr uint64_t Multiplier = 0x9e3779b97f4a7c15ull;
+    constexpr uint64_t Multiplier = 0xda942042e4dd58b5ull;
+    constexpr uint64_t Constant = 1ull;
+    return Multiplier * n + Constant;
 }
 
-uint64_t hash(uint64_t v, size_t n) {
-    uint64_t result{};
-    uint64_t output_mask = uint64_t{1};
-    uint64_t input0_mask = uint64_t{1} << 1;
-    uint64_t input1_mask = uint64_t{1} << 2;
-    uint64_t input2_mask = uint64_t{1} << 3;
-    for (auto i = 0; i < n; ++i) {
-	if ((v bitand input0_mask) ^ (v bitand input1_mask) ^ (v bitand input2_mask))
-	    result |= output_mask;
-	
-	output_mask <<= 1;
-	input0_mask <<= 1;
-	input1_mask <<= 1;
-	input2_mask <<= 1;
-	if (not input0_mask)
-	    input0_mask = 1;
-	if (not input1_mask)
-	    input1_mask = 1;
-	if (not input2_mask)
-	    input2_mask = 1;
-    }
-    
-    return result;
+auto feistel_shift_and_mask(size_t nb) {
+    auto shift = (1 + nb) / 2;
+    auto mask = (uint64_t{1} << shift) - 1;
+    return std::make_tuple(shift, mask);
+}
+
+auto feistel_split_msg(uint64_t msg, int shift, uint64_t mask) {
+    auto right = msg bitand mask;
+    auto left = (msg >> shift) bitand mask;
+    return std::make_tuple(left, right);
+}
+
+auto feistel_swap_msg(uint64_t msg, int shift, uint64_t mask) {
+    auto [left, right] = feistel_split_msg(msg, shift, mask);
+    return (right << shift) bitor left;
+}
+
+auto feistel_round(uint64_t msg, uint64_t round, int shift, uint64_t mask) {
+    auto [left, right] = feistel_split_msg(msg, shift, mask);
+    auto new_right = (left ^ linear_congruent_generator(right ^ round)) bitand mask;
+    return (right << shift) bitor new_right;
+}
+
+constexpr uint64_t FeistelRounds[] = {
+    0x88ef7267b3f978daull,
+    0x5457c7476ab3e57full,
+    0x89529ec3c1eec593ull,
+    0x3fac1e6e30cad1b6ull
 };
+
+auto feistel_cipher(uint64_t msg, size_t nb, size_t nr) {
+    auto [shift, mask] = feistel_shift_and_mask(nb);
+    for (auto i = 0; i < nr; ++i)
+	msg = feistel_round(msg, FeistelRounds[i], shift, mask);
+    msg = feistel_swap_msg(msg, shift, mask);
+    return msg;
+}
+
+auto feistel_decipher(uint64_t msg, size_t nb, size_t nr) {
+    auto [shift, mask] = feistel_shift_and_mask(nb);
+    for (auto i = 0; i < nr; ++i)
+	msg = feistel_round(msg, FeistelRounds[nr - i - 1], shift, mask);
+    msg = feistel_swap_msg(msg, shift, mask);
+    return msg;
+}
 
 template<class Work>
 void measure(std::ostream& os, std::string_view desc, Work&& work) {
@@ -50,21 +72,19 @@ int tool_main(int argc, const char *argv[]) {
     ArgParse opts
 	(
 	 argValue<'b'>("bits", 4, "Number of bits"),
+	 argValue<'r'>("rounds", 3, "Number of Feistel rounds"),
 	 argFlag<'v'>("verbose", "Verbose diagnostics")
 	 );
     opts.parse(argc, argv);
     auto b = opts.get<'b'>();
-    auto verbose = opts.get<'v'>();
+    auto r = opts.get<'r'>();
+    // auto verbose = opts.get<'v'>();
 
-    auto n = uint64_t{1} << b;
-    std::vector<uint64_t> input;
-    for (auto i = 0; i < n; ++i)
-	input.push_back(i);
-
-    if (verbose) {
-	for (auto elem : input)
-	    cout << elem << " " << rotate_right_window(elem, b) << endl;
+    for (auto i = 0; i < (1ull << b); ++i) {
+	auto code = feistel_cipher(i, b, r);
+	auto decode = feistel_decipher(code, b, r);
+	cout << i << " " << code << " " << decode << endl;
     }
-    
+
     return 0;
 }
