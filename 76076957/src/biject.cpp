@@ -13,57 +13,112 @@ uint64_t linear_congruent_generator(uint64_t n) {
     return Multiplier * n + Constant;
 }
 
-auto feistel_shift_and_mask(size_t nb) {
-    auto shift = (1 + nb) / 2;
-    auto mask = (uint64_t{1} << shift) - 1;
-    return std::make_tuple(shift, mask);
+uint64_t pseudo_random_function(uint64_t n, uint64_t k) {
+    constexpr uint64_t Multiplier = 0xda942042e4dd58b5ull;
+    constexpr uint64_t Constant = 0x9e3779b97f4a7c15ull;
+    return __builtin_bitreverse64(Multiplier * n * k + Constant);
 }
 
-auto feistel_split_msg(uint64_t msg, int shift, uint64_t mask) {
-    auto right = msg bitand mask;
-    auto left = (msg >> shift) bitand mask;
-    return std::make_tuple(left, right);
-}
+class FeistelCipher {
+public:
+    FeistelCipher(int number_of_bits, int number_rounds)
+	: shift_((1 + number_of_bits) / 2)
+	, mask_((uint64_t{1} << shift_) - 1)
+	, nrounds_(number_rounds) {
+    }
 
-auto feistel_swap_msg(uint64_t msg, int shift, uint64_t mask) {
-    auto [left, right] = feistel_split_msg(msg, shift, mask);
-    return (right << shift) bitor left;
-}
+    auto encode(uint64_t msg) const {
+	auto [left, right] = split(msg);
+	for (auto i = 0; i < nrounds_; ++i)
+	    round(left, right, Rounds[i]);
+	return combine(left, right);
+    }
 
-auto feistel_round(uint64_t msg, uint64_t round, int shift, uint64_t mask) {
-    auto [left, right] = feistel_split_msg(msg, shift, mask);
-    auto new_right = (left ^ linear_congruent_generator(right ^ round)) bitand mask;
-    return (right << shift) bitor new_right;
-}
+    auto decode(uint64_t msg) const {
+	auto [left, right] = split(msg);
+	for (auto i = 0; i < nrounds_; ++i)
+	    round(left, right, Rounds[nrounds_ - i - 1]);
+	return combine(left, right);
+    }
 
-constexpr uint64_t FeistelRounds[] = {
-    0x88ef7267b3f978daull,
-    0x5457c7476ab3e57full,
-    0x89529ec3c1eec593ull,
-    0x3fac1e6e30cad1b6ull
+private:
+    std::tuple<uint64_t, uint64_t> split(uint64_t msg) const {
+	auto right = msg bitand mask_;
+	auto left = (msg >> shift_) bitand mask_;
+	return std::make_tuple(left, right);
+    }
+
+    uint64_t combine(uint64_t left, uint64_t right) const {
+	return (left << shift_) bitor right;
+    }
+
+    void round(uint64_t& left, uint64_t& right, uint64_t constant) const {
+	auto l = right;
+	auto r = left ^ pseudo_random_function(right, constant);
+	left = l;
+	right = r bitand mask_;
+    }
+
+    static constexpr uint64_t Rounds[] = {
+	0x88ef7267b3f978daull,
+	0x5457c7476ab3e57full,
+	0x89529ec3c1eec593ull,
+	0x3fac1e6e30cad1b6ull,
+	0x56c644080098fc55ull,
+	0x70f2b329323dbf62ull,
+	0x08ee98c0d05e3dadull,
+	0x3eb3d6236f23e7b7ull,
+	0x47d2e1bf72264fa0ull,
+	0x1fb274465e56ba20ull,
+	0x077de40941c93774ull,
+	0x857961a8a772650dull
+    };
+    
+    int shift_;
+    uint64_t mask_;
+    int nrounds_;
 };
 
-auto feistel_cipher(uint64_t msg, size_t nb, size_t nr) {
-    auto [shift, mask] = feistel_shift_and_mask(nb);
-    for (auto i = 0; i < nr; ++i)
-	msg = feistel_round(msg, FeistelRounds[i], shift, mask);
-    msg = feistel_swap_msg(msg, shift, mask);
-    return msg;
-}
+class PseudoRandomPermutation {
+public:
+    PseudoRandomPermutation(uint64_t min, uint64_t max, int rounds = 3)
+	: min_(min)
+	, size_(max - min)
+	, cipher_(64 - std::countl_zero(size_), rounds) { 
+    }
 
-auto feistel_decipher(uint64_t msg, size_t nb, size_t nr) {
-    auto [shift, mask] = feistel_shift_and_mask(nb);
-    for (auto i = 0; i < nr; ++i)
-	msg = feistel_round(msg, FeistelRounds[nr - i - 1], shift, mask);
-    msg = feistel_swap_msg(msg, shift, mask);
-    return msg;
-}
+    auto min() const {
+	return min_;
+    }
+
+    auto max() const {
+	return min_ + size_;
+    }
+
+    auto size() const {
+	return size_;
+    }
+    
+    uint64_t encode(uint64_t msg) const {
+	msg -= min_;
+	do {
+	    msg = cipher_.encode(msg);
+	} while (msg >= size_);
+	msg += min_;
+	return msg;
+    }
+    
+private:
+    uint64_t min_, size_;
+    FeistelCipher cipher_;
+};
 
 template<class Work>
 void measure(std::ostream& os, std::string_view desc, Work&& work) {
     chron::StopWatch timer;
     timer.mark();
-    work();
+    if (work())
+	os << fmt::format("{:>12s}: work failed", desc) << endl;
     auto millis = timer.elapsed_duration<std::chrono::milliseconds>().count();
     os << fmt::format("{:>12s}: {:5d} ms", desc, millis) << endl;
 }
@@ -71,20 +126,62 @@ void measure(std::ostream& os, std::string_view desc, Work&& work) {
 int tool_main(int argc, const char *argv[]) {
     ArgParse opts
 	(
-	 argValue<'b'>("bits", 4, "Number of bits"),
-	 argValue<'r'>("rounds", 3, "Number of Feistel rounds"),
+	 argValue<'m'>("min", 0, "Minimum index"),
+	 argValue<'x'>("max", 10, "Maximum index"),
+	 argValue<'r'>("rounds", 3, "Number of rounds"),
 	 argFlag<'v'>("verbose", "Verbose diagnostics")
 	 );
     opts.parse(argc, argv);
-    auto b = opts.get<'b'>();
+    auto min = opts.get<'m'>();
+    auto max = opts.get<'x'>();
     auto r = opts.get<'r'>();
     // auto verbose = opts.get<'v'>();
+    uint64_t size = max - min;
 
-    for (auto i = 0; i < (1ull << b); ++i) {
-	auto code = feistel_cipher(i, b, r);
-	auto decode = feistel_decipher(code, b, r);
-	cout << i << " " << code << " " << decode << endl;
+    FeistelCipher cip(max, r);
+    uint64_t msg = 0;
+    for (auto i = 0; i < (1ull << max); ++i) {
+	msg = cip.encode(msg);
+	cout << msg << " " << cip.decode(msg) << " " << cip.encode(i) << endl;
     }
+    return 0;
+
+    FeistelCipher cipher(64 - std::countl_zero(size), r);
+    PseudoRandomPermutation perm(min, max, r);
+    std::set<uint64_t> fcodes, pcodes;
+    for (auto i = min; i < max; ++i) {
+	auto fcode = cipher.encode(i - min);
+	auto pcode = perm.encode(i);
+	fcodes.insert(fcode);
+	pcodes.insert(pcode);
+	cout << i << " " << fcode << " " << pcode << endl;
+    }
+
+    if (fcodes.size() != (max - min))
+     	throw std::runtime_error("Feistel not a valid permutation");
+    if (pcodes.size() != (max - min))
+	throw std::runtime_error("Perm not a valid permutation");
+
+    // measure(cout, "FeistelCipher", [&]() {
+    // 	for (auto i = 0; i < size; ++i) {
+    // 	    auto c = cipher.encode(i);
+    // 	    if (c > 4 * size)
+    // 		return true;
+    // 	}
+    // 	return false;
+    // });
+
+    // std::vector<uint64_t> data;
+    // for (auto i = min; i < max; ++i)
+    // 	data.push_back(i);
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // std::shuffle(data.begin(), data.end(), core::rng());
+    // for (auto elem : data)
+    // 	cout << elem << endl;
 
     return 0;
 }
