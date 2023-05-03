@@ -5,27 +5,6 @@
 #include "core/chrono/stopwatch.h"
 #include "core/string/lexical_cast_stl.h"
 
-// The following solution constructs a bijective function F that maps
-// a range of integers onto itself. This function can be used to
-// compute a pseudo-random index directly from an actual index such
-// that the resulting pseudo-random indices are a permutation of the
-// actual indices.
-//
-// There are three ideas (borrowed from cryptography) that allow the
-// construction of such a function: 1) a pseudo-random-function (PRF)
-// (https://en.wikipedia.org/wiki/Pseudorandom_function_family) that
-// mixes the bits of the input and a round constant, 2) a Feistel
-// network (https://en.wikipedia.org/wiki/Feistel_cipher) that uses
-// the PRF to generate an encrypted version of the input that has at
-// most a few more bits than the input, and 3) the idea of using a
-// cycle-walk to construct an format-preserving-encryption FPE
-// (https://en.wikipedia.org/wiki/Format-preserving_encryption) from a
-// pseudo-random permutation with a slightly larger domain than the
-// target domain.
-//
-// While these concepts draw on well-studied cryptography concepts, I
-// believe the end product is probably unqiue and defintely insecure.
-
 uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
     auto a = s0 + s1;
     a ^= a >> 12;
@@ -34,12 +13,14 @@ uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
     return a * 0x2545f4914f6cdd1dull;
 }
 
-class FeistelCipher {
+template<class PRF>
+class FeistelNetwork {
 public:
-    FeistelCipher(int number_of_bits, int number_rounds)
+    FeistelNetwork(int number_of_bits, int number_rounds, PRF&& prf)
 	: shift_((1 + number_of_bits) / 2)
 	, mask_((uint64_t{1} << shift_) - 1)
-	, nrounds_(number_rounds) {
+	, nrounds_(number_rounds)
+	, prf_(std::forward<PRF>(prf)) {
     }
 
     auto encode(uint64_t msg) const {
@@ -68,8 +49,8 @@ private:
     }
 
     void round(uint64_t& left, uint64_t& right, uint64_t constant) const {
-	auto prf = pseudo_random_function(right, constant) bitand mask_;
-	auto r = left ^ prf;
+	auto prf_value = prf_(right, constant) bitand mask_;
+	auto r = left ^ prf_value;
 	left = right;
 	right = r;
     }
@@ -92,14 +73,16 @@ private:
     int shift_;
     uint64_t mask_;
     int nrounds_;
+    PRF prf_;
 };
 
+template<class PRF>
 class PseudoRandomPermutation {
 public:
-    PseudoRandomPermutation(uint64_t min, uint64_t max, int rounds = 3)
+    PseudoRandomPermutation(uint64_t min, uint64_t max, int rounds, PRF&& prf)
 	: min_(min)
-	, size_(max - min)
-	, cipher_(64 - std::countl_zero(size_), rounds) { 
+	, size_(1 + max - min)
+	, cipher_(log2_ceil(size_), rounds, std::forward<PRF>(prf)) { 
     }
 
     auto min() const {
@@ -107,7 +90,7 @@ public:
     }
 
     auto max() const {
-	return min_ + size_;
+	return min_ + size_ - 1;
     }
 
     auto size() const {
@@ -124,8 +107,16 @@ public:
     }
     
 private:
+    static size_t log2_ceil(size_t n) {
+	if (n == 0)
+	    return 0;
+	else {
+	    return 64 - std::countl_zero(n - 1);
+	}
+    }
+    
     uint64_t min_, size_;
-    FeistelCipher cipher_;
+    FeistelNetwork<PRF> cipher_;
 };
 
 template<class Work>
@@ -151,7 +142,7 @@ int tool_main(int argc, const char *argv[]) {
     auto measure_performance = opts.get<'p'>();
 
     if (measure_performance) {
-	PseudoRandomPermutation perm(min, max, rounds);
+	PseudoRandomPermutation perm(min, max, rounds, &pseudo_random_function);
 	measure(cout, "Permutation", [&]() {
 	    for (auto i = perm.min(); i < perm.max(); ++i) {
 		auto code = perm.encode(i);
@@ -162,10 +153,10 @@ int tool_main(int argc, const char *argv[]) {
 	});
     } else {
 	std::set<uint64_t> codes;
-	PseudoRandomPermutation perm(min, max, rounds);
+	PseudoRandomPermutation perm(min, max, rounds, &pseudo_random_function);
 	for (auto i = min; i < max; ++i) {
 	    auto code = perm.encode(i);
-	    assert(code >= min and code < max);
+	    assert(code >= min and code <= max);
 	    codes.insert(code);
 	    cout << i << " " << code << endl;
 	}

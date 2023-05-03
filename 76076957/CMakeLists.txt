@@ -36,6 +36,7 @@ add_chrono()
 
 foreach(prog
     biject
+    shuffle
     )
   add_executable(${prog} src/${prog}.cpp)
   target_link_libraries(${prog} util::util chrono::chrono)
