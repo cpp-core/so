@@ -14,7 +14,8 @@ probably unqiue and should definitely be considered insecure.
 
 The basic strategy is to encrypt the source index to produce the
 target index. The secret sauce is to design the encryption to be
-bijective and use a range of integers as the domain.
+bijective and use a range of integers as the domain. I have dubbed
+this method `fiesty` for the use of a Feistel network.
 
 The first step in the construction is creating a PRF that returns a
 pseudo-random value given a 64-bit input. We can create this family
@@ -41,7 +42,8 @@ producing a pseudo-random permutation as in [Severin Pappadeux's
 answer](https://stackoverflow.com/a/76082801/1202808) which is
 equivalent to constructing an FPE using a prefix cipher. The main
 difference is that this PRF produces more "random" looking results
-than using the linear congruent generator.
+than using the linear congruent generator as shown in the following
+plot.
 
 Instead of using the PRF directly, we will apply a Feistel network
 that leverages the PRF as its round function. The two key advantages
@@ -49,8 +51,9 @@ of the Feistel network is 1) the operation is guaranteed to be
 invertible (i.e. bijective) even if the round function is not, and 2)
 the number of output bits can be selected to be at most one or two
 more than the number of input bits making the encoding range of the
-network at most four times larger than the input domain. The following
-class implements a balanced Feistel network.
+network at most four times larger than the input domain. The minimum
+number of rounds for security applications is suggested to be
+three. The following class implements a balanced Feistel network.
 
 ```c++
 template<class PRF>
@@ -179,15 +182,19 @@ private:
 All of the code and images can be found at
 [GitHub](https://github.com/cpp-core/so.git) in the `76076957`
 directory. I used the following driver for testing and generating the
-performance metrics. I wrote the code for clarity and I have not yet
-done any performance work, although, I think the inner loops are
-already pretty efficient.
-
+performance metrics all of which use three rounds in the Feistel
+network. I wrote the code for clarity and I have not yet done any
+performance work, although, I think the inner loops are already pretty
+efficient.
 
 ```
 39ns / index on Mac M1 Pro (arm64, MacOSX)
 52ns / index on Intel Xeon ES-2698 @ 2.2Ghz (x86, Ubuntu 20.04)
 ```
+
+The following two plots compare using `std::shuffle` versus `fiesty`
+for creating the pseudo-random permuation for 20k indices.
+
 
 ```c++
 #include "core/util/tool.h"
@@ -252,6 +259,12 @@ int tool_main(int argc, const char *argv[]) {
     return 0;
 }
 ```
+
+Just for curiosity's sake, here are plots for using from 1 to 5 rounds
+of the Feistel network. As suggested by theory, there needs to be a
+least three rounds to achieve good results.
+
+
 
   [1]: https://en.wikipedia.org/wiki/Format-preserving_encryption
   [2]: https://en.wikipedia.org/wiki/Feistel_cipher

@@ -35,7 +35,7 @@ add_util()
 add_chrono()
 
 foreach(prog
-    biject
+    fiesty
     shuffle
     )
   add_executable(${prog} src/${prog}.cpp)
