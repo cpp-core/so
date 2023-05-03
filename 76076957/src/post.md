@@ -15,7 +15,7 @@ probably unqiue and should definitely be considered insecure.
 The basic strategy is to encrypt the source index to produce the
 target index. The secret sauce is to design the encryption to be
 bijective and use a range of integers as the domain. I have dubbed
-this method `fiesty` for the use of a Feistel network.
+this method `feisty` for the use of a Feistel network.
 
 The first step in the construction is creating a PRF that returns a
 pseudo-random value given a 64-bit input. We can create this family
@@ -187,12 +187,14 @@ network. I wrote the code for clarity and I have not yet done any
 performance work, although, I think the inner loops are already pretty
 efficient.
 
+
+
 ```
 39ns / index on Mac M1 Pro (arm64, MacOSX)
 52ns / index on Intel Xeon ES-2698 @ 2.2Ghz (x86, Ubuntu 20.04)
 ```
 
-The following two plots compare using `std::shuffle` versus `fiesty`
+The following two plots compare using `std::shuffle` versus `feisty`
 for creating the pseudo-random permuation for 20k indices.
 
 

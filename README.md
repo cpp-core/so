@@ -31,7 +31,7 @@ git clone git@github.com:cpp-core/so.git
 mkdir so/76076957/build
 cd so/76076957/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
-make fiesty && ./bin/fiesty -r 3 -m 0:100000000 -p
+make feisty && ./bin/feisty -r 3 -m 0:100000000 -p
  Permutation:  3854 ms
 ```
 
