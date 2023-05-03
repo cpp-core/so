@@ -5,25 +5,26 @@
 #include "core/chrono/stopwatch.h"
 #include "core/string/lexical_cast_stl.h"
 
-// The following solution uses a Feistel network
-// (https://en.wikipedia.org/wiki/Feistel_cipher) to construct a
-// bijective, format-preserving-encyption (FPE) E : [0,n) <-> [0,n)
-// (https://en.wikipedia.org/wiki/Format-preserving_encryption) that
-// can be used to compute a pseudo-random index directly from an
-// actual index.
-
-// There are three ideas that allow this to work: 1) a
-// pseudo-random-function (PRF)
+// The following solution constructs a bijective function F that maps
+// a range of integers onto itself. This function can be used to
+// compute a pseudo-random index directly from an actual index such
+// that the resulting pseudo-random indices are a permutation of the
+// actual indices.
+//
+// There are three ideas (borrowed from cryptography) that allow the
+// construction of such a function: 1) a pseudo-random-function (PRF)
 // (https://en.wikipedia.org/wiki/Pseudorandom_function_family) that
 // mixes the bits of the input and a round constant, 2) a Feistel
-// network that uses the PRF to generate an encrypted version of the
-// input that has at most one more bit than the input, and 3) the idea
-// of using a cycle-walk to construct an FPE from a pseudo-random
-// permutation with a slightly larger domain.
+// network (https://en.wikipedia.org/wiki/Feistel_cipher) that uses
+// the PRF to generate an encrypted version of the input that has at
+// most a few more bits than the input, and 3) the idea of using a
+// cycle-walk to construct an format-preserving-encryption FPE
+// (https://en.wikipedia.org/wiki/Format-preserving_encryption) from a
+// pseudo-random permutation with a slightly larger domain than the
+// target domain.
 //
 // While these concepts draw on well-studied cryptography concepts, I
 // believe the end product is probably unqiue and defintely insecure.
-
 
 uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
     auto a = s0 + s1;
