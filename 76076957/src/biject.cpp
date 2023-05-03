@@ -4,19 +4,13 @@
 #include <fmt/format.h>
 #include "core/util/tool.h"
 #include "core/chrono/stopwatch.h"
-#include "core/util/random.h"
 
-uint64_t linear_congruent_generator(uint64_t n) {
-    // constexpr uint64_t Multiplier = 0x9e3779b97f4a7c15ull;
-    constexpr uint64_t Multiplier = 0xda942042e4dd58b5ull;
-    constexpr uint64_t Constant = 1ull;
-    return Multiplier * n + Constant;
-}
-
-uint64_t pseudo_random_function(uint64_t n, uint64_t k) {
-    constexpr uint64_t Multiplier = 0xda942042e4dd58b5ull;
-    constexpr uint64_t Constant = 0x9e3779b97f4a7c15ull;
-    return __builtin_bitreverse64(Multiplier * n * k + Constant);
+uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
+    auto a = s0 + s1;
+    a ^= a >> 12;
+    a ^= a << 25;
+    a ^= a >> 27;
+    return a * 0x2545f4914f6cdd1dull;
 }
 
 class FeistelCipher {
@@ -36,8 +30,8 @@ public:
 
     auto decode(uint64_t msg) const {
 	auto [left, right] = split(msg);
-	for (auto i = 0; i < nrounds_; ++i)
-	    round(left, right, Rounds[nrounds_ - i - 1]);
+	for (int i = nrounds_ - 1; i >= 0; --i)
+	    round(right, left, Rounds[i]);
 	return combine(left, right);
     }
 
@@ -53,10 +47,10 @@ private:
     }
 
     void round(uint64_t& left, uint64_t& right, uint64_t constant) const {
-	auto l = right;
-	auto r = left ^ pseudo_random_function(right, constant);
-	left = l;
-	right = r bitand mask_;
+	auto prf = pseudo_random_function(right, constant) bitand mask_;
+	auto r = left ^ prf;
+	left = right;
+	right = r;
     }
 
     static constexpr uint64_t Rounds[] = {
@@ -138,13 +132,31 @@ int tool_main(int argc, const char *argv[]) {
     // auto verbose = opts.get<'v'>();
     uint64_t size = max - min;
 
-    FeistelCipher cip(max, r);
-    uint64_t msg = 0;
-    for (auto i = 0; i < (1ull << max); ++i) {
-	msg = cip.encode(msg);
-	cout << msg << " " << cip.decode(msg) << " " << cip.encode(i) << endl;
-    }
-    return 0;
+    // {
+    // 	auto size = 1ull << max;
+    // 	FeistelCipher cip(max, r);
+    // 	std::set<uint64_t> codes;
+    // 	uint64_t msg = 0;
+    // 	for (auto i = 0; i < size; ++i) {
+    // 	    cout << msg << endl;
+    // 	    msg = cip.encode(msg);
+    // 	}
+    // 	return 0;
+    // }
+    
+    // {
+    // 	auto size = 1ull << max;
+    // 	FeistelCipher cip(max, r);
+    // 	std::set<uint64_t> codes;
+    // 	for (auto i = 0; i < size; ++i) {
+    // 	    auto code = cip.encode(i);
+    // 	    assert(code < size);
+    // 	    codes.insert(code);
+    // 	    cout << i << " " << code << " " << cip.decode(code) << endl;
+    // 	}
+    // 	assert(codes.size() == size);
+    // 	return 0;
+    // }
 
     FeistelCipher cipher(64 - std::countl_zero(size), r);
     PseudoRandomPermutation perm(min, max, r);
@@ -152,6 +164,7 @@ int tool_main(int argc, const char *argv[]) {
     for (auto i = min; i < max; ++i) {
 	auto fcode = cipher.encode(i - min);
 	auto pcode = perm.encode(i);
+	assert(pcode >= min and pcode < max);
 	fcodes.insert(fcode);
 	pcodes.insert(pcode);
 	cout << i << " " << fcode << " " << pcode << endl;
