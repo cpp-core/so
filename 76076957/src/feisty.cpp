@@ -38,12 +38,12 @@ public:
     }
 
     auto encode3(uint64_t msg) const {
-	auto right = msg bitand mask_;
-	auto left = (msg >> shift_) bitand mask_;
-	round(left, right, Rounds[0]);
-	round(left, right, Rounds[1]);
-	round(left, right, Rounds[2]);
-	return (left << shift_) bitor right;
+	auto r0 = msg bitand mask_;
+	auto l0 = (msg >> shift_) bitand mask_;
+	auto r1 = l0 ^ (prf_(r0, Rounds[0]) bitand mask_);
+	auto r2 = r0 ^ (prf_(r1, Rounds[1]) bitand mask_);
+	auto r3 = r1 ^ (prf_(r2, Rounds[2]) bitand mask_);
+	return (r2 << shift_) bitor r3;
     }
 
 private:
