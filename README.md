@@ -4,6 +4,7 @@ This repo contains code related to Stack Overflow Questions and Answers. The cod
 related to each Question is in an independent directory named after the
 Question title.
 
+* [biject](#biject) -- Efficient pseudo-random permutation.
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
@@ -21,6 +22,17 @@ clang packages before installing with something like:
 ```
 wget https://apt.llvm.org/llvm.sh
 ./llvm.sh 15
+```
+
+## <a name="biject"></a> Efficient pseudo-random permutation
+
+```
+git clone git@github.com:cpp-core/so.git
+mkdir so/76076957/build
+cd so/76076957/build
+CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
+make biject && ./bin/biject -r 3 -m 0:100000000 -p
+ Permutation:  3854 ms
 ```
 
 ## <a name="primes"></a> Checking uniqueness of shifting sieve of eratosthenes
