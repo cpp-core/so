@@ -1,9 +1,9 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
-#include <fmt/format.h>
 #include "core/util/tool.h"
 #include "core/chrono/stopwatch.h"
+#include "core/string/lexical_cast_stl.h"
 
 uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
     auto a = s0 + s1;
@@ -120,81 +120,36 @@ void measure(std::ostream& os, std::string_view desc, Work&& work) {
 int tool_main(int argc, const char *argv[]) {
     ArgParse opts
 	(
-	 argValue<'m'>("min", 0, "Minimum index"),
-	 argValue<'x'>("max", 10, "Maximum index"),
+	 argValue<'m'>("range", std::make_pair(0, 16), "Permutation range min:max"),
 	 argValue<'r'>("rounds", 3, "Number of rounds"),
-	 argFlag<'v'>("verbose", "Verbose diagnostics")
+	 argFlag<'p'>("performance", "Measure performance")
 	 );
     opts.parse(argc, argv);
-    auto min = opts.get<'m'>();
-    auto max = opts.get<'x'>();
-    auto r = opts.get<'r'>();
-    // auto verbose = opts.get<'v'>();
-    uint64_t size = max - min;
+    auto [min, max] = opts.get<'m'>();
+    auto rounds = opts.get<'r'>();
+    auto measure_performance = opts.get<'p'>();
 
-    // {
-    // 	auto size = 1ull << max;
-    // 	FeistelCipher cip(max, r);
-    // 	std::set<uint64_t> codes;
-    // 	uint64_t msg = 0;
-    // 	for (auto i = 0; i < size; ++i) {
-    // 	    cout << msg << endl;
-    // 	    msg = cip.encode(msg);
-    // 	}
-    // 	return 0;
-    // }
-    
-    // {
-    // 	auto size = 1ull << max;
-    // 	FeistelCipher cip(max, r);
-    // 	std::set<uint64_t> codes;
-    // 	for (auto i = 0; i < size; ++i) {
-    // 	    auto code = cip.encode(i);
-    // 	    assert(code < size);
-    // 	    codes.insert(code);
-    // 	    cout << i << " " << code << " " << cip.decode(code) << endl;
-    // 	}
-    // 	assert(codes.size() == size);
-    // 	return 0;
-    // }
-
-    FeistelCipher cipher(64 - std::countl_zero(size), r);
-    PseudoRandomPermutation perm(min, max, r);
-    std::set<uint64_t> fcodes, pcodes;
-    for (auto i = min; i < max; ++i) {
-	auto fcode = cipher.encode(i - min);
-	auto pcode = perm.encode(i);
-	assert(pcode >= min and pcode < max);
-	fcodes.insert(fcode);
-	pcodes.insert(pcode);
-	cout << i << " " << fcode << " " << pcode << endl;
+    if (measure_performance) {
+	PseudoRandomPermutation perm(min, max, rounds);
+	measure(cout, "Permutation", [&]() {
+	    for (auto i = perm.min(); i < perm.max(); ++i) {
+		auto code = perm.encode(i);
+		if (code < perm.min() or code > perm.max())
+		    return true;
+	    }
+	    return false;
+	});
+    } else {
+	std::set<uint64_t> codes;
+	PseudoRandomPermutation perm(min, max, rounds);
+	for (auto i = min; i < max; ++i) {
+	    auto code = perm.encode(i);
+	    assert(code >= min and code < max);
+	    codes.insert(code);
+	    cout << i << " " << code << endl;
+	}
+	assert(codes.size() == max - min);
     }
-
-    if (fcodes.size() != (max - min))
-     	throw std::runtime_error("Feistel not a valid permutation");
-    if (pcodes.size() != (max - min))
-	throw std::runtime_error("Perm not a valid permutation");
-
-    // measure(cout, "FeistelCipher", [&]() {
-    // 	for (auto i = 0; i < size; ++i) {
-    // 	    auto c = cipher.encode(i);
-    // 	    if (c > 4 * size)
-    // 		return true;
-    // 	}
-    // 	return false;
-    // });
-
-    // std::vector<uint64_t> data;
-    // for (auto i = min; i < max; ++i)
-    // 	data.push_back(i);
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // std::shuffle(data.begin(), data.end(), core::rng());
-    // for (auto elem : data)
-    // 	cout << elem << endl;
 
     return 0;
 }
