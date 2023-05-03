@@ -119,6 +119,27 @@ private:
     FeistelNetwork<PRF> cipher_;
 };
 
+uint64_t iterate_prf(uint64_t n, size_t r) {
+    static constexpr uint64_t Rounds[] = {
+	0x88ef7267b3f978daull,
+	0x5457c7476ab3e57full,
+	0x89529ec3c1eec593ull,
+	0x3fac1e6e30cad1b6ull,
+	0x56c644080098fc55ull,
+	0x70f2b329323dbf62ull,
+	0x08ee98c0d05e3dadull,
+	0x3eb3d6236f23e7b7ull,
+	0x47d2e1bf72264fa0ull,
+	0x1fb274465e56ba20ull,
+	0x077de40941c93774ull,
+	0x857961a8a772650dull
+    };
+    
+    for (auto i = 0; i < r; ++i)
+	n = pseudo_random_function(n, Rounds[i]);
+    return n;
+}
+
 template<class Work>
 void measure(std::ostream& os, std::string_view desc, Work&& work) {
     chron::StopWatch timer;
@@ -134,12 +155,14 @@ int tool_main(int argc, const char *argv[]) {
 	(
 	 argValue<'m'>("range", std::make_pair(0, 16), "Permutation range min:max"),
 	 argValue<'r'>("rounds", 3, "Number of rounds"),
-	 argFlag<'p'>("performance", "Measure performance")
+	 argFlag<'p'>("performance", "Measure performance"),
+	 argFlag<'s'>("sort", "Sort index based on PRF")
 	 );
     opts.parse(argc, argv);
     auto [min, max] = opts.get<'m'>();
     auto rounds = opts.get<'r'>();
     auto measure_performance = opts.get<'p'>();
+    auto sort_index = opts.get<'s'>();
 
     if (measure_performance) {
 	PseudoRandomPermutation perm(min, max, rounds, &pseudo_random_function);
@@ -151,6 +174,15 @@ int tool_main(int argc, const char *argv[]) {
 	    }
 	    return false;
 	});
+    } else if (sort_index) {
+	std::vector<uint64_t> codes;
+	for (auto i = min; i < max; ++i)
+	    codes.push_back(i);
+	std::sort(codes.begin(), codes.end(), [](uint64_t a, uint64_t b) {
+	    return iterate_prf(a, 3) < iterate_prf(b, 3);
+	});
+	for (auto elem : codes)
+	    cout << elem << endl;
     } else {
 	std::set<uint64_t> codes;
 	PseudoRandomPermutation perm(min, max, rounds, &pseudo_random_function);
