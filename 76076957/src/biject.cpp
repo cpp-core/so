@@ -5,6 +5,26 @@
 #include "core/chrono/stopwatch.h"
 #include "core/string/lexical_cast_stl.h"
 
+// The following solution uses a Feistel network
+// (https://en.wikipedia.org/wiki/Feistel_cipher) to construct a
+// bijective, format-preserving-encyption (FPE) E : [0,n) <-> [0,n)
+// (https://en.wikipedia.org/wiki/Format-preserving_encryption) that
+// can be used to compute a pseudo-random index directly from an
+// actual index.
+
+// There are three ideas that allow this to work: 1) a
+// pseudo-random-function (PRF)
+// (https://en.wikipedia.org/wiki/Pseudorandom_function_family) that
+// mixes the bits of the input and a round constant, 2) a Feistel
+// network that uses the PRF to generate an encrypted version of the
+// input that has at most one more bit than the input, and 3) the idea
+// of using a cycle-walk to construct an FPE from a pseudo-random
+// permutation with a slightly larger domain.
+//
+// While these concepts draw on well-studied cryptography concepts, I
+// believe the end product is probably unqiue and defintely insecure.
+
+
 uint64_t pseudo_random_function(uint64_t s0, uint64_t s1) {
     auto a = s0 + s1;
     a ^= a >> 12;
