@@ -7,8 +7,8 @@ indices.
 
 There are three ideas (all borrowed from cryptography) that taken
 together allow for the construction of such a function: 1) a
-Pseudo-Random Function Family [PRF][1], 2) a [Feistel][2] network, and
-3) a format-preserving-encryption [FPE][3].  While these ideas draw on
+Pseudo-Random Function Family [(PRF)][1], 2) a [Feistel][2] network, and
+3) a format-preserving-encryption [(FPE)][3].  While these ideas draw on
 well-studied cryptography concepts, I believe the end product is
 probably unqiue and should definitely be considered insecure.
 
@@ -21,7 +21,7 @@ The first step in the construction is creating a PRF that returns a
 pseudo-random value given a 64-bit input. We can create this family
 using a single function that also takes a subkey parameter that is
 used to select the particular function to use. The canonical PRF
-example is using AES to produce a 128-bit pseudo-random value. We will
+example uses AES to produce a 128-bit pseudo-random value. We will
 use the following function which is more efficient to evaluate
 (although much less secure) and produces a 64-bit pseudo-random
 value. The `s0` parameter is the source index and `s1` parameter is
@@ -124,12 +124,12 @@ If the source index range happens to be an even power of two, then we
 can simply call `encode` on the Feistel network to map a source index
 to a pseudo-random target index. In general, however, the Feistel
 network may return an encoding that is outside the source index
-domain. The solution is to simply call encode on the out-of-range
+domain. The solution is to simply call `encode` on the out-of-range
 index until we get an index that is in the source index domain. This
 recursion will terminate because the Feistel network encryption is
 bijective and the domain is finite. For the worst case source index
 range (i.e. one more than an even power of two), their will be an
-average of almost four calls to encode for a balanced network or two
+average of almost four calls to `encode` for a balanced network or two
 for an unbalanced network. The following class implements the basic
 logic along with mapping the source index domain from `min,max` to
 `0,max-min`.
@@ -266,7 +266,7 @@ least three rounds to achieve good results.
 
 
 
-  [1]: https://en.wikipedia.org/wiki/Format-preserving_encryption
+  [1]: https://en.wikipedia.org/wiki/Pseudorandom_function_family
   [2]: https://en.wikipedia.org/wiki/Feistel_cipher
   [3]: https://en.wikipedia.org/wiki/Format-preserving_encryption
 
