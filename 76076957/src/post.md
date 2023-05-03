@@ -190,7 +190,7 @@ efficient.
 
 
 ```
-39ns / index on Mac M1 Pro (arm64, MacOSX)
+39ns / index on Mac M1 Ultra (arm64, MacOSX)
 52ns / index on Intel Xeon ES-2698 @ 2.2Ghz (x86, Ubuntu 20.04)
 ```
 

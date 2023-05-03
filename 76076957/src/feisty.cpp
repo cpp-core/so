@@ -37,6 +37,15 @@ public:
 	return combine(left, right);
     }
 
+    auto encode3(uint64_t msg) const {
+	auto right = msg bitand mask_;
+	auto left = (msg >> shift_) bitand mask_;
+	round(left, right, Rounds[0]);
+	round(left, right, Rounds[1]);
+	round(left, right, Rounds[2]);
+	return (left << shift_) bitor right;
+    }
+
 private:
     std::tuple<uint64_t, uint64_t> split(uint64_t msg) const {
 	auto right = msg bitand mask_;
