@@ -4,19 +4,10 @@
 #include "core/util/tool.h"
 #include "core/mp/type_name.h"
 
-template<size_t I, class T> requires std::is_aggregate_v<T>
-constexpr auto aggregate_field_count_impl() {
-    if constexpr (I == 0) return 0;
-    else return aggregate_field_count_impl<I - 1, T>();
-}
-
-template<class T> requires std::is_aggregate_v<T>
-constexpr auto aggregate_field_count() {
-    return aggregate_field_count_impl<sizeof(T) * CHAR_BIT, T>();
-}
-
 struct Foo {
-    int a, b, c;
+    char a;
+    int b;
+    double c;
 };
 
 struct Bar {
@@ -31,46 +22,55 @@ struct universal_constructor {
 
 template<class T, size_t I, size_t... Ix,
 	 class U = decltype(T{universal_constructor{I}, universal_constructor{Ix}...})>
-constexpr bool constructable(std::index_sequence<I, Ix...>) {
+constexpr bool constructible(std::index_sequence<I, Ix...>) {
     return true;
 };
 
 template<class T, size_t... Ix>
-constexpr bool constructable(std::index_sequence<Ix...>) {
+constexpr bool constructible(std::index_sequence<Ix...>) {
     return false;
 };
 
-static_assert(constructable<Foo>(std::index_sequence<1, 2>{}));
-static_assert(constructable<Foo>(std::index_sequence<1, 2, 3>{}));
-static_assert(not constructable<Foo>(std::index_sequence<1, 2, 3, 4>{}));
+static_assert(constructible<Foo>(std::index_sequence<1, 2>{}));
+static_assert(constructible<Foo>(std::index_sequence<1, 2, 3>{}));
+static_assert(not constructible<Foo>(std::index_sequence<1, 2, 3, 4>{}));
 
 template<class T>
 struct aggr_field_count {
-    template<class A>
+    template<size_t N>
     struct impl;
 
-    template<size_t I, size_t... Ix>
-    struct impl<std::integer_sequence<size_t, I, Ix...>> {
-	static constexpr bool can_construct = 
-	    constructable<T>(std::make_index_sequence<sizeof...(Ix) + 1>{});
-	using rtype = impl<std::make_index_sequence<sizeof...(Ix)>>;
-	static constexpr size_t value = can_construct ? sizeof...(Ix) + 1
-	    : 0;
+    template<size_t N> requires (N == 0)
+    struct impl<N> { static constexpr size_t value = 0; };
+
+    template<size_t N> requires (N > 0)
+    struct impl<N> {
+	static constexpr bool good = constructible<T>(std::make_index_sequence<N>{});
+	static constexpr size_t value = good ? N : impl<N - 1>::value;
     };
 
-    static constexpr size_t value = impl<std::make_index_sequence<3>>::value;
+    static constexpr size_t value = impl<sizeof(T)>::value;
 };
 
-template<class T, size_t I, size_t... Is>
-constexpr auto number_initializers(size_t& out, std::index_sequence<I, Is...>) ->
-    decltype(T{universal_constructor{I}, universal_constructor{Is}...}) {
-    out = sizeof...(Is) + 1;
-}
+template<class T>
+inline constexpr auto aggr_field_count_v = aggr_field_count<T>::value;
 
-template<class T, size_t... Is>
-constexpr void number_initializers(size_t& out, std::index_sequence<Is...>) {
-    number_initializers(out, std::make_index_sequence<sizeof...(Is) - 1>{});
-}
+template<class... Ts>
+struct aggr_field_type_list { };
+
+template<class T>
+struct aggr_field_types3 {
+    static auto ignore() {
+	T *dummy = nullptr;
+	auto [a, b, c] = *dummy;
+	return std::tuple<decltype(a), decltype(b), decltype(c)>{};
+    }
+    using type = decltype(ignore());
+};
+
+template<class T, size_t N = aggr_field_count_v<T>>
+struct aggr_field_types {
+};
 
 int tool_main(int argc, const char *argv[]) {
     ArgParse opts
@@ -79,5 +79,11 @@ int tool_main(int argc, const char *argv[]) {
 	 );
     opts.parse(argc, argv);
 
+    cout << aggr_field_count_v<Foo> << endl;
+    cout << aggr_field_count_v<Bar> << endl;
+    using foo_types = typename aggr_field_types3<Foo>::type;
+    cout << core::mp::type_name<std::tuple_element_t<0, foo_types>>() << endl;
+    cout << core::mp::type_name<std::tuple_element_t<1, foo_types>>() << endl;
+    cout << core::mp::type_name<std::tuple_element_t<2, foo_types>>() << endl;
     return 0;
 }
