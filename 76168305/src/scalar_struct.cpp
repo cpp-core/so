@@ -14,14 +14,19 @@ struct Bar {
     int *ptr;
 };
 
-struct universal_constructor {
+struct universal_type {
     std::size_t ignore;
     template<class T>
     constexpr operator T& () const;
 };
 
+template<class T, class U = decltype(T{})>
+constexpr bool constructible(std::index_sequence<>) {
+    return true;
+};
+
 template<class T, size_t I, size_t... Ix,
-	 class U = decltype(T{universal_constructor{I}, universal_constructor{Ix}...})>
+	 class U = decltype(T{universal_type{I}, universal_type{Ix}...})>
 constexpr bool constructible(std::index_sequence<I, Ix...>) {
     return true;
 };
@@ -31,9 +36,12 @@ constexpr bool constructible(std::index_sequence<Ix...>) {
     return false;
 };
 
+static_assert(constructible<Foo>(std::index_sequence<>{}));
+static_assert(constructible<Foo>(std::index_sequence<1>{}));
 static_assert(constructible<Foo>(std::index_sequence<1, 2>{}));
 static_assert(constructible<Foo>(std::index_sequence<1, 2, 3>{}));
 static_assert(not constructible<Foo>(std::index_sequence<1, 2, 3, 4>{}));
+static_assert(not constructible<Foo>(std::index_sequence<1, 2, 3, 4, 5>{}));
 
 template<class T>
 struct aggr_field_count {
@@ -55,22 +63,44 @@ struct aggr_field_count {
 template<class T>
 inline constexpr auto aggr_field_count_v = aggr_field_count<T>::value;
 
-template<class... Ts>
-struct aggr_field_type_list { };
+template<class T, size_t N>
+struct aggr_field_type_impl;
 
 template<class T>
-struct aggr_field_types3 {
+struct aggr_field_type_impl<T, 0> {
+    static auto ignore() { return std::tuple<>{};  }
+    using type = decltype(ignore());
+};
+
+template<class T>
+struct aggr_field_type_impl<T, 1> {
     static auto ignore() {
-	T *dummy = nullptr;
-	auto [a, b, c] = *dummy;
+	T *x = nullptr; auto [a] = *x;
+	return std::tuple<decltype(a)>{};
+    }
+    using type = decltype(ignore());
+};
+
+template<class T>
+struct aggr_field_type_impl<T, 2> {
+    static auto ignore() {
+	T *x = nullptr; auto [a, b] = *x;
+	return std::tuple<decltype(a), decltype(b)>{};
+    }
+    using type = decltype(ignore());
+};
+
+template<class T>
+struct aggr_field_type_impl<T, 3> {
+    static auto ignore() {
+	T *x = nullptr; auto [a, b, c] = *x;
 	return std::tuple<decltype(a), decltype(b), decltype(c)>{};
     }
     using type = decltype(ignore());
 };
 
 template<class T, size_t N = aggr_field_count_v<T>>
-struct aggr_field_types {
-};
+using aggr_field_types = typename aggr_field_type_impl<T, N>::type;
 
 int tool_main(int argc, const char *argv[]) {
     ArgParse opts
@@ -79,11 +109,10 @@ int tool_main(int argc, const char *argv[]) {
 	 );
     opts.parse(argc, argv);
 
-    cout << aggr_field_count_v<Foo> << endl;
-    cout << aggr_field_count_v<Bar> << endl;
-    using foo_types = typename aggr_field_types3<Foo>::type;
+    using foo_types = aggr_field_types<Foo>;
     cout << core::mp::type_name<std::tuple_element_t<0, foo_types>>() << endl;
     cout << core::mp::type_name<std::tuple_element_t<1, foo_types>>() << endl;
     cout << core::mp::type_name<std::tuple_element_t<2, foo_types>>() << endl;
+
     return 0;
 }
