@@ -57,6 +57,19 @@ void measure_sort(std::string_view desc, size_t n, Work&& work) {
 }
 
 int tool_main(int argc, const char *argv[]) {
+    std::vector<int> tmp = { 1, 2, 2 };
+    for (auto i = 0; i < 1'000; ++i) {
+	for (auto i = 0; i < tmp.size(); ++i)
+	    cout << tmp[i] << " ";
+	cout << endl;
+	std::shuffle(tmp.begin(), tmp.end(), core::rng());
+	quick_sort(tmp.begin(), tmp.end());
+	for (auto i = 1; i < tmp.size(); ++i)
+	    if (not (tmp[i-1] < tmp[i]))
+		throw std::runtime_error("bad");
+    }
+    return 0;
+    
     const size_t N = 20;
     for (auto i = 1; i <= N; ++i)
 	measure_sort("std::sort", 1'000'000 * i, [](auto& data) {
