@@ -58,14 +58,14 @@ void measure_sort(std::string_view desc, size_t n, Work&& work) {
 
 int tool_main(int argc, const char *argv[]) {
     const size_t N = 20;
-    for (auto i = 1; i < N; ++i)
+    for (auto i = 1; i <= N; ++i)
 	measure_sort("std::sort", 1'000'000 * i, [](auto& data) {
 	    std::sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
 		return a < b;
 	    });
 	});
     
-    for (auto i = 1; i < N; ++i)
+    for (auto i = 1; i <= N; ++i)
 	measure_sort("quick_sort", 1'000'000 * i, [](auto& data) {
 	    quick_sort(data.begin(), data.end(), [](const auto& a, const auto& b) {
 		return a < b;

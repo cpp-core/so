@@ -1,21 +1,19 @@
-std::sort 1000000 63 ms quick_sort 1000000 56 ms
-std::sort 2000000 111 ms quick_sort 2000000 118 ms
-std::sort 3000000 174 ms quick_sort 3000000 182 ms
-std::sort 4000000 235 ms quick_sort 4000000 248 ms
-std::sort 5000000 300 ms quick_sort 5000000 313 ms
-std::sort 6000000 358 ms quick_sort 6000000 376 ms
-std::sort 7000000 420 ms quick_sort 7000000 449 ms
-std::sort 8000000 488 ms quick_sort 8000000 515 ms
-std::sort 9000000 566 ms quick_sort 9000000 591 ms
-std::sort 10000000 633 ms quick_sort 10000000 644 ms
-std::sort 11000000 683 ms quick_sort 11000000 721 ms
-std::sort 12000000 748 ms quick_sort 12000000 796 ms
-std::sort 13000000 815 ms quick_sort 13000000 863 ms
-std::sort 14000000 902 ms quick_sort 14000000 936 ms
-std::sort 15000000 948 ms quick_sort 15000000 995 ms
-std::sort 16000000 1015 ms quick_sort 16000000 1074 ms
-std::sort 17000000 1087 ms quick_sort 17000000 1141 ms
-std::sort 18000000 1153 ms quick_sort 18000000 1206 ms
-std::sort 19000000 1237 ms quick_sort 19000000 1280 ms
-
-
+std::sort 1 23145009 54 ms	quick_sort 1 25213551 59 ms
+std::sort 2 49113996 111 ms	quick_sort 2 55255950 125 ms
+std::sort 3 74838014 173 ms	quick_sort 3 82359838 193 ms
+std::sort 4 102426991 236 ms	quick_sort 4 115502553 262 ms
+std::sort 5 129386800 302 ms	quick_sort 5 142689899 331 ms
+std::sort 6 160232609 360 ms	quick_sort 6 175661276 397 ms
+std::sort 7 185859346 425 ms	quick_sort 7 209493759 476 ms
+std::sort 8 214044663 490 ms	quick_sort 8 243814646 545 ms
+std::sort 9 240670961 567 ms	quick_sort 9 265426527 623 ms
+std::sort 10 269167188 631 ms	quick_sort 10 309801828 683 ms
+std::sort 11 299220894 688 ms	quick_sort 11 339701112 760 ms
+std::sort 12 329881466 749 ms	quick_sort 12 372998461 845 ms
+std::sort 13 360796829 818 ms	quick_sort 13 399866437 913 ms
+std::sort 14 383629088 901 ms	quick_sort 14 431313864 1005 ms
+std::sort 15 421580343 953 ms	quick_sort 15 477004615 1056 ms
+std::sort 16 449285782 1020 ms	quick_sort 16 500691764 1138 ms
+std::sort 17 477266784 1092 ms	quick_sort 17 542765901 1212 ms
+std::sort 18 510496930 1152 ms	quick_sort 18 579326354 1284 ms
+std::sort 19 534795723 1235 ms	quick_sort 19 607387871 1361 ms
