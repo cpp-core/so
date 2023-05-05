@@ -1,6 +1,8 @@
 
 The following algorithm is very simiple and reasonably efficient
-taking O(number-characters) operations.
+taking O(number-characters) operations. The code and build
+instructions are on [GitHub](https://github.com/cpp-core/so.git) in
+the directory `76178746`.
 
 ```c++
 #include <iostream>
@@ -36,5 +38,3 @@ int main(int argc, const char *argv[]) {
     return 0;
 }
 ```
-
-
