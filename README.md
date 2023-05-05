@@ -5,6 +5,7 @@ related to each Question is in an independent directory named after the
 Question title.
 
 * [fiesty](#fiesty) -- Efficient pseudo-random permutation.
+* [pfr](#pfr) -- Basic structure reflection.
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
@@ -33,6 +34,16 @@ cd so/76076957/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
 make feisty && ./bin/feisty -r 3 -m 0:100000000 -p
  Permutation:  3854 ms
+```
+
+## <a name="pfr"></a> Basic structure reflection
+
+```
+git clone git@github.com:cpp-core/so.git
+mkdir so/76168305/build
+cd so/76168305/build
+CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
+make scalr_struct && ./bin/scalar_struct
 ```
 
 ## <a name="primes"></a> Checking uniqueness of shifting sieve of eratosthenes
