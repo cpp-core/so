@@ -9,6 +9,7 @@ Question title.
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
+* [compound-assert](#compound) -- Find compound words
 
 If you need to install a particular versionn of clang for a build on Ubuntu, you
 can do something like the following:
@@ -80,3 +81,14 @@ mkdir so/76114394/build
 cd so/76114394/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
 make static_assert && ./bin/static_assert
+```
+
+## <a name="compound"></a> Find compound words
+
+```
+git clone git@github.com:cpp-core/so.git
+mkdir so/76178746/build
+cd so/76178746/build
+CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
+make compound && ./bin/compound
+```
