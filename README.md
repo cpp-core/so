@@ -9,7 +9,7 @@ Question title.
 * [primes](#primes) -- Checking uniqueness of shifting sieve of eratosthenes
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
-* [compound-assert](#compound) -- Find compound words
+* [compound](#compound) -- Find compound words
 
 If you need to install a particular versionn of clang for a build on Ubuntu, you
 can do something like the following:
