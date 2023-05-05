@@ -1,0 +1,21 @@
+std::sort 1000000 63 ms quick_sort 1000000 56 ms
+std::sort 2000000 111 ms quick_sort 2000000 118 ms
+std::sort 3000000 174 ms quick_sort 3000000 182 ms
+std::sort 4000000 235 ms quick_sort 4000000 248 ms
+std::sort 5000000 300 ms quick_sort 5000000 313 ms
+std::sort 6000000 358 ms quick_sort 6000000 376 ms
+std::sort 7000000 420 ms quick_sort 7000000 449 ms
+std::sort 8000000 488 ms quick_sort 8000000 515 ms
+std::sort 9000000 566 ms quick_sort 9000000 591 ms
+std::sort 10000000 633 ms quick_sort 10000000 644 ms
+std::sort 11000000 683 ms quick_sort 11000000 721 ms
+std::sort 12000000 748 ms quick_sort 12000000 796 ms
+std::sort 13000000 815 ms quick_sort 13000000 863 ms
+std::sort 14000000 902 ms quick_sort 14000000 936 ms
+std::sort 15000000 948 ms quick_sort 15000000 995 ms
+std::sort 16000000 1015 ms quick_sort 16000000 1074 ms
+std::sort 17000000 1087 ms quick_sort 17000000 1141 ms
+std::sort 18000000 1153 ms quick_sort 18000000 1206 ms
+std::sort 19000000 1237 ms quick_sort 19000000 1280 ms
+
+
