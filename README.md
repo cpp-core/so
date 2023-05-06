@@ -10,6 +10,7 @@ Question title.
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
 * [compound](#compound) -- Find compound words
+* [bits](#bits) -- Bitset series
 
 If you need to install a particular versionn of clang for a build on Ubuntu, you
 can do something like the following:
@@ -91,4 +92,13 @@ mkdir so/76178746/build
 cd so/76178746/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
 make compound && ./bin/compound
+```
+## <a name="bitset"></a> Bitset series
+
+```
+git clone git@github.com:cpp-core/so.git
+mkdir so/76185918/build
+cd so/76185918/build
+CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
+make bits && ./bin/bits
 ```
