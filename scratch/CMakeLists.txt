@@ -38,6 +38,7 @@ foreach(prog
     s0
     s1
     s2
+    s3
     )
   add_executable(${prog} src/${prog}.cpp)
   target_link_libraries(${prog} util::util chrono::chrono)
