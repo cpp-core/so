@@ -11,6 +11,7 @@ Question title.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
 * [compound](#compound) -- Find compound words
 * [bitset](#bitset) -- Bitset series
+* [partition](#partition) -- Partition sequence
 
 If you need to install a particular version of clang for a build on Ubuntu, you
 can do something like the following:
@@ -101,4 +102,14 @@ mkdir so/76185918/build
 cd so/76185918/build
 CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
 make bits && ./bin/bits
+```
+
+## <a name="partition"></a> Partition sequence
+
+```
+git clone git@github.com:cpp-core/so.git
+mkdir so//build
+cd so//build
+CC=clang-mp-15 CXX=clang++-mp-15 cmake ..
+make partition && ./bin/partition
 ```
