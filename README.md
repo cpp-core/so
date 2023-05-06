@@ -12,7 +12,7 @@ Question title.
 * [compound](#compound) -- Find compound words
 * [bitset](#bitset) -- Bitset series
 
-If you need to install a particular versionn of clang for a build on Ubuntu, you
+If you need to install a particular version of clang for a build on Ubuntu, you
 can do something like the following:
 
 ```

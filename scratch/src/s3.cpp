@@ -27,38 +27,39 @@ auto n_choose_k(T n, T k) {
     return r;
 }
 
+using Element = uint;
+using Elements = std::vector<Element>;
+using PartitionMask = uint64_t;
+
 // Return the number of unique elements in in the selected partition
 // of `data`, which must be in sorted order.
-template<std::unsigned_integral T>
-auto count_unique(const std::vector<unsigned int>& data, T selected) {
-    T mask{1};
+auto count_unique(const Elements& data, PartitionMask mask) {
+    std::optional<Element> last;
+    int idx{std::countr_zero(mask)};
     size_t n{};
-    std::optional<unsigned int> last;
-    for (auto elem : data) {
-	if (mask bitand selected) {
-	    if (not last or (elem != *last))
-		++n;
+    while (mask) {
+	auto elem = data[idx];
+	if (not last or (elem != *last)) {
+	    ++n;
 	    last = elem;
 	}
-	mask <<= 1;
+	mask >>= std::countr_zero(mask) + 1;
+	idx += std::countr_zero(mask) + 1;
     }
     return n;
 }
 
-// Output the selected elements in `data`
-template<std::unsigned_integral T>
-void output_partition(std::ostream& os, const std::vector<unsigned int>& data, T selected) {
-    T mask{1};
-    for (auto elem : data) {
-	if (mask bitand selected)
-	    os << elem << " ";
-	mask <<= 1;
+void add_partition(Elements& part, const Elements& data, PartitionMask mask) {
+    int idx{std::countr_zero(mask)};
+    while (mask) {
+	part.push_back(data[idx]);
+	mask >>= std::countr_zero(mask) + 1;
+	idx += std::countr_zero(mask) + 1;
     }
 }
 
 // Return true if the two partitions select the same element values.
-template<std::unsigned_integral T>
-bool same(const std::vector<unsigned int>& data, T a, T b) {
+bool same(const Elements& data, PartitionMask a, PartitionMask b) {
     int idx{std::countr_zero(a)}, jdx{std::countr_zero(b)};
     while (a and b) {
 	if (data[idx] != data[jdx])
@@ -87,26 +88,37 @@ int tool_main(int argc, const char *argv[]) {
     // elements and the zero bits mark the right subset of
     // elements. Start with the lower half of the bits set.
     auto partition = (1ull << (n / 2)) - 1;
-
+    
     // One past the last partition to consider.
     auto end_partition = 1ull << n;
 
+    // These are the only bits that count.
+    auto global_mask = end_partition - 1;
+
+    std::vector<std::vector<uint>> results;
+    
     // Iterate over all the partitionings.
-    decltype(partition) last_partition{};
     while (partition < end_partition) {
-	bool different = not last_partition or
-	    not same(data, partition, last_partition) or
-	    not same(data, ~partition, ~last_partition);
-	if (different and (count_unique(data, partition) == count_unique(data, ~partition))) {
-	    cout << "[ ";
-	    output_partition(cout, data, partition);
-	    cout << "] - [ ";
-	    output_partition(cout, data, ~partition);
-	    cout << "]";
-	    cout << endl;
+	if (count_unique(data, partition) == count_unique(data, ~partition bitand global_mask)) {
+	    results.push_back({});
+	    add_partition(results.back(), data, partition);
+	    add_partition(results.back(), data, ~partition bitand global_mask);
 	}
-	last_partition = partition;
 	partition = next_permutation_n(partition);
+    }
+
+    std::sort(results.begin(), results.end());
+    auto last = std::unique(results.begin(), results.end());
+    results.erase(last, results.end());
+
+    for (const auto& r : results) {
+	cout << "[ ";
+	for (auto i = 0; i < r.size() / 2; ++i)
+	    cout << r[i] << " ";
+	cout << "] - [ ";
+	for (auto i = r.size() / 2; i < r.size(); ++i)
+	    cout << r[i] << " ";
+	cout << "]" << endl;
     }
     
     return 0;
