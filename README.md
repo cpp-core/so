@@ -10,7 +10,7 @@ Question title.
 * [rshift](#rshift) -- C++ Bitwise shift of uint64_t in vector.
 * [static-assert](#static-assert) -- Type constraining template parameters inside concept.
 * [compound](#compound) -- Find compound words
-* [bits](#bits) -- Bitset series
+* [bitset](#bitset) -- Bitset series
 
 If you need to install a particular versionn of clang for a build on Ubuntu, you
 can do something like the following:
