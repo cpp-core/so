@@ -94,19 +94,16 @@ int tool_main(int argc, const char *argv[]) {
     // Iterate over all the partitionings.
     decltype(partition) last_partition{};
     while (partition < end_partition) {
-	if (not last_partition or
+	bool different = not last_partition or
 	    not same(data, partition, last_partition) or
-	    not same(data, ~partition, ~last_partition)) {
-	    auto a = count_unique(data, partition);
-	    auto b = count_unique(data, ~partition);
-	    if (a == b) {
-		cout << "[ ";
-		output_partition(cout, data, partition);
-		cout << "] - [ ";
-		output_partition(cout, data, ~partition);
-		cout << "]";
-		cout << endl;
-	    }
+	    not same(data, ~partition, ~last_partition);
+	if (different and (count_unique(data, partition) == count_unique(data, ~partition))) {
+	    cout << "[ ";
+	    output_partition(cout, data, partition);
+	    cout << "] - [ ";
+	    output_partition(cout, data, ~partition);
+	    cout << "]";
+	    cout << endl;
 	}
 	last_partition = partition;
 	partition = next_permutation_n(partition);
