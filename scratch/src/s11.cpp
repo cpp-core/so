@@ -103,15 +103,18 @@ int tool_main(int argc, const char *argv[]) {
     // Combine partitions and count results.
     size_t n{};
     for (auto i = 0; i <= needed; ++i) {
-	const auto& left_costs = left[i].costs;
-	const auto& right_costs = right[needed - i].costs;
+	auto& left_costs = left[i].costs;
+	auto& right_costs = right[needed - i].costs;
 
+	if (left_costs.size() > right_costs.size())
+	    std::swap(left_costs, right_costs);
+	
 	for (int i = 0, j = right_costs.size() - 1; i < left_costs.size() and j >= 0; ++i) {
 	    auto lc = left_costs[i];
 	    while (j >= 0 and lc + right_costs[j] > cost)
 		--j;
 	    if (j >= 0)
-		n += j;
+		n += j + 1;
 	}
     }
     
