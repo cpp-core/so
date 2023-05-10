@@ -1,6 +1,17 @@
-// Copyright (C) 2022, 2023 by Mark Melton
-//
 
+
+You might want to first build an intermediate map from id to parent id
+and write a function that takes the map and an id and return a list of
+the parents. The function has a natural recursive implementation. With
+these in hand, it is easy to loop over the items and construct the
+final data structure that you want.
+
+I know the post is tagged as `Java`, but I think the following code
+still clearly illustrates the algorithm for getting to a solution.
+
+Sample Code
+-----------
+```c++
 #include <map>
 #include <vector>
 #include <iostream>
@@ -64,3 +75,4 @@ int main(int argc, const char *argv[]) {
 
     return 0;
 }
+```
