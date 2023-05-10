@@ -2,20 +2,46 @@
 //
 
 #include <iostream>
+#include <map>
+#include <any>
+
+using std::cout, std::endl;
+
+template<class F>
+struct ArgType;
+
+template<class T>
+struct ArgType<std::function<void(T)>> {
+    using type = T;
+};
+
+auto any_match(std::any a) {
+    throw std::runtime_error("no handler for any_match");
+}
+
+template<class T, class... Ts>
+auto any_match(std::any a, T&& handler, Ts&&... handlers) {
+    using arg_type = typename ArgType<decltype(std::function(handler))>::type;
+    if (auto ptr = std::any_cast<arg_type>(&a); ptr)
+        return handler(*ptr);
+    else
+        return any_match(a, std::forward<Ts>(handlers)...);
+}
 
 int main(int argc, const char *argv[]) {
-    // ArgParse opts
-    // 	(
-    // 	 argFlag<'v'>("verbose", "Verbose diagnostics")
-    // 	 );
-    // opts.parse(argc, argv);
 
-    long long a = 0;
-    long long until = 1000000000;
-    for (long long i = 0; i < until; i++) {
-        a += i;
-    }
-    std::cout << a << std::endl;
+    std::any a = 1;
+    any_match(a,
+	      [](int) { cout << "int" << endl; },
+	      [](double) { cout << "double" << endl; }
+	      );
 
+    a = 1.0;
+    any_match(a,
+	      [](int) { cout << "int" << endl; },
+	      [](double) { cout << "double" << endl; }
+	      );
+    
+    
     return 0;
 }
