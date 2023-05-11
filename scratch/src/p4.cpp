@@ -5,41 +5,66 @@
 #include <string>
 #include <tuple>
 
-template <typename t>
-concept type_model = requires(t p_t) {
-  typename t::inner;
+// Does T have an inner type named `inner`.
+template<class T>
+concept Inner = requires(T x) {
+    typename T::inner;
 };
 
-template <typename t, typename u>
-concept same_inner = std::is_same_v<typename std::decay_t<t>::inner,
-				    typename std::decay_t<u>::inner>;
+// Do T and U have same inner type.
+template<class T, class U>
+concept SameInner = Inner<T> and Inner<U> and std::is_same_v<typename T::inner, typename U::inner>;
 
-template <typename t, typename... t_type_model>
-concept container_model = (same_inner<t, t_type_model> && ...);
+// Helper for checking that all template parameters satisfy Inner
+// concept and all pairs satisfy SameInner.
+template<typename>
+struct inner_container_impl : std::false_type {};
 
+template<template<typename...> class Tp, Inner T>
+struct inner_container_impl<Tp<T>> {
+    static constexpr bool value = true;
+};
+
+template<template<typename...> class Tp, Inner T, Inner... Ts>
+struct inner_container_impl<Tp<T, Ts...>> {
+    static constexpr bool value = (SameInner<T, Ts> and ...);
+};
+
+// The concept just use the helper.
+template<class T>
+concept InnerContainer = inner_container_impl<T>::value;
+
+// Test types.
 struct type_1 {
-  using inner = int;
+    using inner = int;
 };
 
 struct type_2 {
-  using inner = std::string;
+    using inner = std::string;
 };
 
-template <type_model... t_type_models> struct container {};
+struct type_3 {
+    using inner = int;
+};
 
-template <type_model... t_type_model>
-void f(container_model<container<t_type_model...>> auto) {}
+template<Inner... Ts> struct container {};
 
-using containers_X = container<type_1, type_2>;
+void f(InnerContainer auto) {}
 
-static_assert(not same_inner<type_1, type_2>);
-static_assert(not container_model<type_1, type_2>);
+using containers_X = std::tuple<type_1, type_2>;
+using containers_Y = std::tuple<type_1, type_3>;
+
+static_assert(not SameInner<type_1, type_2>);
+static_assert(not InnerContainer<std::tuple<type_1, type_2>>);
+static_assert(not InnerContainer<containers_X>);
 
 int main() {
 
-  // containers_X _x;
-  // This produces a compilation error as expected.
-  // f(_x);
+    // containers_X _x;
+    // f(_x);
+
+    containers_Y _y;
+    f(_y);
 
   return 0;
 }
