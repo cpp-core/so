@@ -20,10 +20,23 @@ using Stack = std::stack<Interval>;
 
 using std::cout, std::endl;
 
+void dump_stack(Stack stack) {
+    while (stack.size()) {
+	auto [a, b, label] = stack.top();
+	stack.pop();
+	cout << a << " " << b << " " << label << endl;
+    }
+}
+
 int main(int argc, const char *argv[]) {
+    // Intervals vals = {
+    //     { 0, 3, "foo" },
+    //     { 2, 4, "bar" }
+    // };
     Intervals vals = {
         { 0, 3, "foo" },
-        { 2, 4, "bar" }
+        { 0, 4, "bar" },
+	{ 0, 5, "que" }
     };
 
     // Sort the intervals by their start value and end value.
@@ -39,6 +52,9 @@ int main(int argc, const char *argv[]) {
     // While there are at least two intervals on the stack, operate on
     // the first two intervals.
     while (stack.size() > 1) {
+	// cout << "stack: " << endl;
+	// dump_stack(stack);
+	
         auto a = stack.top(); stack.pop();
         auto b = stack.top(); stack.pop();
 
@@ -47,6 +63,25 @@ int main(int argc, const char *argv[]) {
         if (a.end <= b.start) {
             results.emplace_back(a);
             stack.push(b);
+        }
+        // If and b start at the same point, we have to adjust all
+        // intervals that start at that point.
+        else if (a.start == b.start) {
+            auto end = std::min(a.end, b.end);
+            std::string label = a.label + "-" + b.label;
+            Stack tmp;
+            while (stack.size() and stack.top().start == a.start) {
+                auto next = stack.top();
+                label += "-" + next.label;
+                stack.pop();
+                tmp.emplace(end, next.end, next.label);
+            }
+            while (tmp.size()) {
+                stack.emplace(tmp.top());
+                tmp.pop();
+            }
+            stack.emplace(end, b.end, b.label);
+            results.emplace_back(a.start, end, label);
         }
         // If a and b partially overlap, we have three intervals
         // (a.start, b.start), (b.start, a.end) and (a.end,
