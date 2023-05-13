@@ -31,6 +31,7 @@ add_link_options(-stdlib=libc++)
 
 add_util()
 add_chrono()
+add_mdspan()
 
 # Add our dependencies
 #
