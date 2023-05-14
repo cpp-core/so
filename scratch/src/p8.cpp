@@ -85,14 +85,79 @@ public:
     }
 };
 
-template<size_t Rank, std::integral IndexType = int>
-using mdshared_dynamic = mdshared<IndexType, Kokkos::dextents<IndexType, Rank>>;
+template<class ElementType, size_t Rank, std::integral IndexType = int>
+using shared = mdshared<ElementType, Kokkos::dextents<IndexType, Rank>>;
+
+template<class ElementType, size_t Rank, std::integral IndexType = int>
+using span = Kokkos::mdspan<ElementType, Kokkos::dextents<IndexType, Rank>>;
+
+template<class ElementType, size_t... Sizes>
+using fixed_span = Kokkos::mdspan<ElementType, Kokkos::extents<int, Sizes>...>;
+
+template<class ElementType,
+	 class Extents,
+	 class LayoutPolicy = Kokkos::layout_right,
+	 class AccessorPolicy = Kokkos::default_accessor<ElementType>>
+using mixed_span = Kokkos::mdspan<ElementType, Extents, LayoutPolicy, AccessorPolicy>;
+
+template<class ElementType, size_t Rank, std::integral IndexType = int>
+using array = Kokkos::Experimental::mdarray<ElementType, Kokkos::dextents<IndexType, Rank>>;
+
+template<class ElementType, size_t... Sizes>
+using fixed_array = Kokkos::Experimental::mdarray<ElementType, Kokkos::extents<int, Sizes...>>;
+
+template<class ElementType, 
+	 class Extents,
+	 class LayoutPolicy = Kokkos::layout_right,
+	 class AccessorPolicy = Kokkos::default_accessor<ElementType>>
+using mixed_array = Kokkos::Experimental::mdarray<ElementType,
+						  Extents,
+						  LayoutPolicy,
+						  AccessorPolicy>;
 
 }; // core::md
 
+template<class T>
+concept MultiDimSpan = requires (T a, size_t n) {
+    typename T::element_type;
+    { a.extent(n) } -> std::integral;
+    { a.rank() } -> std::integral;
+};
+
+std::ostream& operator<<(std::ostream& os, const MultiDimSpan auto& span) {
+    using T = decltype(span);
+    using E = typename std::decay_t<T>::extents_type;
+    if constexpr (E::rank() == 1) {
+	os << "[ ";
+	for (auto i = 0; i < span.extent(0); ++i)
+	    os << span[i] << " ";
+	os << "]";
+    } else if constexpr (E::rank() == 2) {
+	for (auto i = 0; i < span.extent(0); ++i) {
+	    os << "[ ";
+	    for (auto j = 0; j < span.extent(1); ++j)
+		os << span[i, j] << " ";
+	    os << "]" << endl;
+	}
+    } else if constexpr (E::rank() == 3) {
+	for (auto i = 0; i < span.extent(0); ++i) {
+	    os << "[ ";
+	    for (auto j = 0; j < span.extent(1); ++j) {
+		os << "[ ";
+		for (auto k = 0; k < span.extent(2); ++k)
+		    os << span[i, j, k] << " ";
+		os << "]" << endl;
+	    }
+	    os << "]" << endl;
+	}
+    }
+    return os;
+}
+
 int main(int argc, const char *argv[]) {
-    Kokkos::Experimental::mdarray<int, Kokkos::dextents<int, 2>> x(6, 10);
-    // core::md::mdshared_dynamic<2> x(7, 7);
+    core::md::array<int, 2> x(6, 10);
+    core::md::fixed_array<int, 3, 3> y{};
+    core::md::shared<int, 2> z(7, 8);
 
     for (auto i = 0; i < x.extent(0); ++i)
 	for (auto j = 0; j < x.extent(1); ++j)
@@ -103,5 +168,14 @@ int main(int argc, const char *argv[]) {
 	    cout << x[i, j] << " ";
 	cout << endl;
     }
+
+    cout << x << endl;
+
+    core::md::fixed_array<int, 3, 3, 3> w{};
+    for (auto i = 0; i < w.extent(0); ++i)
+	for (auto j = 0; j < w.extent(1); ++j)
+	    for (auto k = 0; k < w.extent(2); ++k)
+		w[i, j, k] = i * w.extent(1) * w.extent(2) + j * w.extent(2) + k;
+    cout << w << endl;
     return 0;
 }
