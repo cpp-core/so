@@ -75,8 +75,10 @@ public:
 	// SpinLockGuard guard(lock_);
 	std::lock_guard guard(mutex_);
 	ensure_room_for_message(msg.size());
-	std::copy(msg.begin(), msg.end(), base_ + *ptr_bytes_written_);
-	*ptr_bytes_written_ += msg.size();
+	auto nbytes = *ptr_bytes_written_;
+	std::copy(msg.begin(), msg.end(), base_ + nbytes);
+	nbytes += msg.size();
+	*ptr_bytes_written_ = nbytes;
     }
     
 private:
@@ -131,12 +133,12 @@ private:
     }
     
     void ensure_room_for_message(size_t n) {
-	auto nwritten = *ptr_bytes_written_, nmapped = *ptr_bytes_mapped_;
-	if (nwritten + n >= nmapped) {
-	    munmap(base_, nmapped);
+	auto nw = *ptr_bytes_written_, nm = *ptr_bytes_mapped_;
+	if (nw + n >= nm) {
+	    munmap(base_, nm);
 	    base_ = nullptr;
 	    
-	    auto new_size = std::max(2 * nmapped, nwritten + n + 1);
+	    auto new_size = std::max(2 * nm, nw + n + 1);
 	    auto nbytes = grow_file(new_size);
 	    map_memory(nbytes);
 	}
