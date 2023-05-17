@@ -2,6 +2,8 @@
 //
 
 #include <type_traits>
+#include <vector>
+
 template<class... Ts>
 struct count;
 
