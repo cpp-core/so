@@ -1,39 +1,34 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
-#include <cassert>
+#include <atomic>
+#include <thread>
 #include <iostream>
 
-size_t alpha_string_to_number(const std::string& str) {
-    size_t n{};
-    for (auto elem : str) {
-	n *= 26;
-	n += 1 + (elem - 'a');
-    }
-    return n;
-}
+class AtomicTest {
+ public:
+  int AsyncTask() {
+    std::thread timer([this](){
+      while (not stop_.load(std::memory_order_acquire)) {
+        counter_.fetch_add(1, std::memory_order_relaxed);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+      }
+      std::cout << "counter = " << counter_ << std::endl;
+    });
+    
+    std::this_thread::sleep_for(std::chrono::microseconds(100));
+    stop_.store(true, std::memory_order_release);
+    timer.join();
+    return 0;
+  }
 
-std::string number_to_alpha_string(size_t n) {
-    std::string r{};
-    while (n > 0) {
-	r += 'a' + (--n % 26);
-        n /= 26;
-    }
-    std::reverse(r.begin(), r.end());
-    return r;
-}
+ private:
+  std::atomic<int> counter_{0};
+  std::atomic<bool> stop_{false};
+};
 
 int main(int argc, const char *argv[]) {
-
-    for (auto i = 0; i < 1'000'000; ++i) {
-	auto s = number_to_alpha_string(i);
-	auto n = alpha_string_to_number(s);
-	assert(i == n);
-    }
-    // auto n1 = alpha_string_to_number("aaa");
-    // // auto n2 = alpha_string_to_number("aaa");
-    // std::cout << n1 << std::endl;
-    // // std::cout << n2 << std::endl;
-    // std::cout << number_to_alpha_string(n1) << std::endl;
+    AtomicTest test;
+    test.AsyncTask();
     return 0;
 }
