@@ -143,10 +143,10 @@ private:
     }
     
     // Pointer to the number of bytes written.
-    size_t *ptr_bytes_written_{nullptr};
+    volatile size_t *ptr_bytes_written_{nullptr};
 
     // Pointer to the number of bytes in the mapped region.
-    size_t *ptr_bytes_mapped_{nullptr};
+    volatile size_t *ptr_bytes_mapped_{nullptr};
     
     // Pointer to the mapped region.
     char *base_{nullptr};
