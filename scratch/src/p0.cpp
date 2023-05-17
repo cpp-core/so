@@ -1,11 +1,13 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
+#include <atomic>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <filesystem>
 #include <thread>
+#include <vector>
 #include <iostream>
 #include <chrono>
 
