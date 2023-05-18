@@ -11,38 +11,38 @@ class StopWatch
 {
 public:
     StopWatch()
-	: start_tp_(Clock::now())
-	, last_tp_(start_tp_)
+        : start_tp_(Clock::now())
+        , last_tp_(start_tp_)
     { }
 
     auto now() const
     {
-	std::atomic_thread_fence(std::memory_order_relaxed);
-	auto current_tp = Clock::now();
-	std::atomic_thread_fence(std::memory_order_relaxed);
-	return current_tp;
+        std::atomic_thread_fence(std::memory_order_relaxed);
+        auto current_tp = Clock::now();
+        std::atomic_thread_fence(std::memory_order_relaxed);
+        return current_tp;
     }
 
     auto mark()
     {
-	auto current_tp = now();
-	auto elapsed = current_tp - last_tp_;
-	last_tp_ = current_tp;
-	return elapsed;
+        auto current_tp = now();
+        auto elapsed = current_tp - last_tp_;
+        last_tp_ = current_tp;
+        return elapsed;
     }
 
     template<class Units = typename Clock::duration>
     auto elapsed_duration()
     {
-	auto elapsed = mark();
-	return std::chrono::duration_cast<Units>(elapsed);
+        auto elapsed = mark();
+        return std::chrono::duration_cast<Units>(elapsed);
     }
     
     template<class Units = typename Clock::duration>
     auto elapsed_time()
     {
-	auto elapsed = mark();
-	return std::chrono::duration_cast<Units>(elapsed).count();
+        auto elapsed = mark();
+        return std::chrono::duration_cast<Units>(elapsed).count();
     }
     
 private:
@@ -66,15 +66,15 @@ int main(int argc, const char *argv[]) {
     timer.mark();
     std::vector<std::thread> threads;
     for (auto i = 0; i < nth; ++i)
-	threads.emplace_back([&]() {
-	    for (auto i = 0; i < msg_per_thread; ++i) {
-		logger.info("This is a log message\n");
-		logger.flush();
-	    }
-	});
+        threads.emplace_back([&]() {
+            for (auto i = 0; i < msg_per_thread; ++i) {
+                logger.info("This is a log message\n");
+                logger.flush();
+            }
+        });
 
     for (auto& thread : threads)
-	thread.join();
+        thread.join();
     
     auto ms = timer.elapsed_duration<std::chrono::milliseconds>().count();
     std::cout << ms << " ms" << std::endl;
