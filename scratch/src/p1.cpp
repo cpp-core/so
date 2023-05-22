@@ -1,10 +1,91 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
+#include <condition_variable>
 #include <iostream>
-#include <filesystem>
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
+#include <mutex>
+#include <thread>
+
+class H2O {
+    std::mutex m;
+    std::condition_variable m_cond;
+    int idx;
+public:
+    H2O() : idx(0) {
+    }
+
+    void hydrogen(std::function<void()> releaseHydrogen) {
+        std::unique_lock<std::mutex> mlock(m);
+        m_cond.wait(mlock, [this](){return idx != 0;});
+        // releaseHydrogen() outputs "H". Do not change or remove this line.
+        releaseHydrogen();
+        idx = (idx+1) % 3;
+        m_cond.notify_all();
+    }
+
+    void oxygen(std::function<void()> releaseOxygen) {
+        std::unique_lock<std::mutex> mlock(m);
+        m_cond.wait(mlock, [this](){return idx == 0;});
+        // releaseOxygen() outputs "O". Do not change or remove this line.
+        releaseOxygen();
+        idx = (idx+1)%3;
+        m_cond.notify_all();
+    }
+};
+
+class H2OAtomic {
+    /* state is one of {00, 01, 10, 20, 21} where the first digit represents the number of hydrogen atoms acquires and the second digit is the number of oxygen atoms acquired */
+    std::atomic<int> state_{0};
+    /* stores the number of atoms that we have finished processing, increments from 0 to 3 and resets back to 3*/
+    std::atomic<int> completedCount_{0};
+
+public:
+    H2OAtomic() {}
+
+    void acquireHydrogen(){
+        int curState = state_.load();
+        do{
+            while(curState/10 == 2){
+                // full, 2 hydrogen atoms have already been acquired
+                curState = state_.load();
+            }
+        } while(!state_.compare_exchange_weak(curState, curState + 10));
+            // modify the state to show that 1 more hydrogen has been acquired
+    }
+
+    void acquireOxygen(){
+        int curState = state_.load();
+        do{
+            while(curState % 10 == 1){
+                // full, 1 oxygen has already been acquired
+                curState = state_.load();
+            }
+        } while(!state_.compare_exchange_weak(curState, curState + 1));
+            // modify the state to show that 1 oxygen has been acquired
+    }
+
+    void complete(){
+        // increment count of completed
+        completedCount_.fetch_add(1);
+        int expected = 3;
+        /* The thread that resets the completed count back to 0 is responsible for resetting the acquired state as well.
+        If more than 1 acquired thread tries to reset state, in between 2 of these resets a new set of atoms might already be acquired which we don't want to write over. */
+        if(completedCount_.compare_exchange_strong(expected, 0)){
+            state_.store(0);
+        }
+    }
+    void hydrogen(std::function<void()> releaseHydrogen) {
+        acquireHydrogen();
+        releaseHydrogen(); // prints "H"
+        complete();
+    }
+
+    void oxygen(std::function<void()> releaseOxygen) {
+        acquireOxygen();
+        releaseOxygen(); // prints "O"
+        complete();
+    }
+};
 
 template<class Clock = std::chrono::high_resolution_clock>
 class StopWatch
@@ -52,32 +133,51 @@ private:
 
 using std::cout, std::endl;
 
-int main(int argc, const char *argv[]) {
-    const auto filename = "/tmp/x.out";
-    size_t nth = argc >= 2 ? atoi(argv[1]) : 1;
-    size_t nmsg = argc >= 3 ? atoi(argv[2]) : 1'000'000;
-    size_t msg_per_thread = nmsg / nth;
+void release_hydrogen() {
+    // cout << "H";
+}
 
-    std::filesystem::remove(std::filesystem::path(filename));
-    auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("/tmp/x.out", true);
-    spdlog::logger logger("basic", sink);
-    
+void release_oxygen() {
+    // cout << "O";
+}
+
+template<class Builder, class T, class U>
+void build_water(int n, T&& h, U&& o) {
+    Builder builder;
+    auto h0th = std::thread([&]() {
+        for (auto i = 0; i < n; ++i)
+            builder.hydrogen(h);
+    });
+    auto h1th = std::thread([&]() {
+        for (auto i = 0; i < n; ++i)
+            builder.hydrogen(h);
+    });
+    auto oth = std::thread([&]() {
+        for (auto i = 0; i < n; ++i)
+            builder.oxygen(o);
+    });
+
+    h0th.join();
+    h1th.join();
+    oth.join();
+}
+
+template<class Work>
+void measure(std::string_view desc, Work&& work) {
     StopWatch timer;
     timer.mark();
-    std::vector<std::thread> threads;
-    for (auto i = 0; i < nth; ++i)
-        threads.emplace_back([&]() {
-            for (auto i = 0; i < msg_per_thread; ++i) {
-                logger.info("This is a log message\n");
-                logger.flush();
-            }
-        });
+    work();
+    auto n = timer.elapsed_duration<std::chrono::microseconds>().count();
+    cout << desc << " : " << n << endl;
+}
 
-    for (auto& thread : threads)
-        thread.join();
-    
-    auto ms = timer.elapsed_duration<std::chrono::milliseconds>().count();
-    std::cout << ms << " ms" << std::endl;
+int main(int argc, const char *argv[]) {
+    measure("mutex", [&]() {
+        build_water<H2O>(3000, release_hydrogen, release_oxygen);
+    });
+    measure("atomic", [&]() {
+        build_water<H2OAtomic>(3000, release_hydrogen, release_oxygen);
+    });
     
     return 0;
 }
