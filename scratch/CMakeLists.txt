@@ -33,7 +33,7 @@ add_util()
 add_chrono()
 add_mdspan()
 add_spdlog()
-
+add_cc()
 find_package(Eigen3)
 
 # Add our dependencies
@@ -51,6 +51,6 @@ foreach(prog
     p0 p1 p2 p3 p4 p5 p6 p7 p8 p9
     )
   add_executable(${prog} src/${prog}.cpp)
-  target_link_libraries(${prog} spdlog::spdlog pthread Eigen3::Eigen)
+  target_link_libraries(${prog} pthread)
 endforeach()
 
