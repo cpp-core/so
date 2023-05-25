@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <vector>
 
 using num_t = uint32_t;
 using std::cout, std::endl;

@@ -4,6 +4,7 @@
 #undef NDEBUG
 #include <cassert>
 
+#include <algorithm>
 #include <bit>
 #include <iostream>
 #include <random>

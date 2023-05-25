@@ -1,6 +1,7 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 

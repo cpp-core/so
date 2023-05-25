@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include "core/util/tool.h"
 
 /// Return the lexicographically next bit permutation with the same
