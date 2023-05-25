@@ -1,66 +1,45 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
-#include <condition_variable>
-#include <chrono>
 #include <iostream>
-#include <thread>
-
-template<class F>
-class DelayedExecution {
-public:
-    DelayedExecution(std::chrono::milliseconds ms, F&& func)
-	: ms_(ms)
-	, func_(std::forward<F>(func)) {
-    }
-
-    ~DelayedExecution() {
-	if (thread_.joinable())
-	    thread_.join();
-    }
-
-    bool started() const {
-	return started_.load();
-    }
-    
-    void start() {
-	thread_ = std::thread{ [this]() {
-	    std::unique_lock<std::mutex> lock(mutex_);
-	    cv_.wait_for(lock, ms_, [this]() { return not enabled_.load(); });
-	    if (enabled_) {
-		enabled_.store(false);
-		started_.store(true);
-		lock.unlock();
-                func_();
-	    }
-        }};
-    }
-
-    bool stop() {
-        enabled_.store(false);
-        cv_.notify_one();
-	std::unique_lock lock(mutex_);
-	return started();
-    }
-    
-private:
-    std::chrono::milliseconds ms_;
-    F func_;
-    std::thread thread_;
-    std::condition_variable cv_;
-    std::mutex mutex_;
-    std::atomic<bool> enabled_{false}, started_{false};
-};
 
 using std::cout, std::endl;
 
-int main(int argc, const char *argv[]) {
-    DelayedExecution task1(std::chrono::milliseconds{250}, []() { cout << "task1" << endl; });
-    DelayedExecution task2(std::chrono::milliseconds{250}, []() { cout << "task2" << endl; });
+void subSort(std::vector<int>& array) {
+    int seqStart = 0;
+    for (int i = 0; i < array.size() - 1; i++) {
+        if (array[i] < array[i + 1]) {
+	    std::sort(&array[seqStart], &array[i + 1]);
+            seqStart = i + 1;
+        }
+    }
+    std::sort(&array[seqStart], &array[array.size()]);
+}
 
-    task1.start();
-    task2.start();
-    task1.stop();
+int main(int argc, const char *argv[]) {
+    // std::vector<int> data = { 53, 50, 41, 8, 64, 35, 17, 76, 58, 3, 75, 1, 99, 56, 2 };
+    std::vector<int> data = { 1, 2, 3, 3, 2, 1 };
+    subSort(data);
+    
+    // int ldx{};
+    // bool was_up{}, was_down{};
+    // for (auto i = 0; i < data.size() - 1; ++i) {
+    // 	bool up = data[i] < data[i+1];
+    // 	bool down = data[i] > data[i+1];
+    // 	if ((was_up and down) or (was_down and up)) {
+    // 	    std::sort(&data[ldx], &data[i+1]);
+    //         ldx = i + 1;
+    // 	    was_down = false;
+    // 	    was_up = false;
+    // 	} else {
+    // 	    was_down = down;
+    // 	    was_up = up;
+    // 	}
+    // }
+    // std::sort(&data[ldx], &data[data.size()]);
+
+    for (auto elem : data)
+	cout << elem << " ";
     
     return 0;
 }

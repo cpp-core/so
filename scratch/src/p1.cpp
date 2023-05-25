@@ -3,44 +3,53 @@
 
 #include <iostream>
 
-using std::cout, std::endl;
-
-template<typename T>
-class Wrapper {
-    T t;
+// Rule of three with copy-and-swap idiom
+class A {
 public:
-    explicit Wrapper(T t) : t(t) {}
+    A() {
+	x = new int[10];
+    }
 
-    void call() {
-	cout << "Wrapper called with " << typeid(T).name() << endl;
-	t();
-    };
+    A(const A& other) : A() {
+	std::copy(other.x, other.x + 10, x);
+    }
+
+    const A& operator=(A other) {
+        std::swap(*this, other);
+        return *this;
+    }
+
+    ~A() {
+        delete x;
+    }
+    
+private:
+    int *x{nullptr};
 };
 
-class Problem {
+// Copy-and-swap idiom using a unique pointer
+class AUP {
 public:
-    void test() { }
+    AUP() {
+        x = std::make_unique<int[]>(10);
+    }
 
-    // Case 1: Lambda
-    static constexpr auto l = []() { };
-    Wrapper<decltype(l)> x{l};
+    AUP(const AUP& other) : AUP() {
+        std::copy(other.x.get(), other.x.get() + 10, x.get());
+    }
 
-    // Case 2: Pointer to member
-    Wrapper<std::function<void()>> y{std::bind(&Problem::test, this)};
+    const AUP& operator=(AUP other) {
+        std::swap(*this, other);
+        return *this;
+    }
+    
+private:
+    std::unique_ptr<int[]> x;
 };
 
 int main() {
-    Wrapper w{[]() { }};
-    w.call();
-    
-    Problem p;
-    p.x.call();
-    p.y.call();
-
-    // You need an object to invoke a pointer to member.
-    // auto y = Wrapper(&Problem::test);
-    // y.call(); // Fails to compile
-
-    // This is how to use pointer to member.
-    (&p)->Problem::test();
+    A a;
+    A b = a;
+    AUP aup;
+    AUP bup = aup;
 }

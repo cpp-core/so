@@ -42,7 +42,7 @@ foreach(prog
     s0 s1 s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 s12 s13 s14 s15 s16 s17 s18 s19
     )
   add_executable(${prog} src/${prog}.cpp)
-  target_link_libraries(${prog} util::util chrono::chrono)
+  target_link_libraries(${prog} util::util chrono::chrono cc::cc)
 endforeach()
 
 # Add our dependencies
@@ -51,6 +51,6 @@ foreach(prog
     p0 p1 p2 p3 p4 p5 p6 p7 p8 p9
     )
   add_executable(${prog} src/${prog}.cpp)
-  target_link_libraries(${prog} pthread)
+  target_link_libraries(${prog} pthread Eigen3::Eigen)
 endforeach()
 
