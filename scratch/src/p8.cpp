@@ -2,71 +2,137 @@
 //
 
 #include <iostream>
-#include <map>
-#include <queue>
-#include <set>
-#include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <tuple>
 
-// https://en.wikipedia.org/wiki/Dijkstra's_algorithm
-// https://takeuforward.org/data-structure/dijkstras-algorithm-using-priority-queue-g-32/
+template <typename /*CRTP*/>
+struct calc_offset;
 
-using NodePair = std::pair<int,int>;
-using NodePairs = std::vector<NodePair>;
+template <template <size_t> class ElemTraits>
+struct calc_offset<ElemTraits<0>>
+{
+    constexpr static size_t value = 0;
+};
 
-using DistanceVertex = std::pair<int, int>;
-using MinQueue = std::priority_queue<DistanceVertex,
-                                  std::vector<DistanceVertex>,
-                                  std::greater<DistanceVertex>>;
+template <template <size_t> class ElemTraits, size_t Index>
+struct calc_offset<ElemTraits<Index>>
+{
+    constexpr static size_t _get_value() noexcept {
+        constexpr auto roundUp = [](size_t num, size_t multiple) -> size_t {
+            const size_t mod = num % multiple;
+            return mod == 0 ? num : num + multiple - mod;
+        };
+
+        using prev_traits = ElemTraits<Index - 1>;
+
+        const size_t type_alignment = std::alignment_of<typename ElemTraits<Index>::value_type>::value,
+            prev_type_size = sizeof(typename prev_traits::value_type),
+            prev_offset = prev_traits::offset;
+
+        return roundUp(prev_offset + prev_type_size, type_alignment);
+    }
+
+    constexpr static size_t value = _get_value();
+};
+
+template <class>
+struct calc_packed_offset;
+
+template <template <size_t> class ElemTraits>
+struct calc_packed_offset<ElemTraits<0>>
+{
+    constexpr static size_t value = 0;
+};
+
+template <template <size_t> class ElemTraits, size_t Index>
+struct calc_packed_offset<ElemTraits<Index>>
+{
+    using prev_traits = ElemTraits<Index - 1>;
+    
+    constexpr static size_t value = 
+	sizeof(typename prev_traits::value_type) + prev_traits::packed_offset;
+};
+
+// not a real structure
+template <typename POD, typename Fields>
+struct pod_traits
+{
+    template <size_t I>
+    struct element
+    {
+        using value_type = std::tuple_element_t<I, Fields>;
+        using pod_type = POD;
+        constexpr static size_t offset = calc_offset<element<I>>::value;
+        constexpr static size_t packed_offset = calc_packed_offset<element<I>>::value;
+    };
+};
+
+struct normal
+{
+    uint8_t _0;
+    uint64_t _1;
+    uint8_t _2;
+    uint16_t _3;
+};
+
+using normal_types = std::tuple<decltype(normal{}._0),
+                                decltype(normal{}._1),
+                                decltype(normal{}._2),
+                                decltype(normal{}._3)>;
+using normal_traits = pod_traits<normal, normal_types>;
+
+static_assert(offsetof(normal, _0) == normal_traits::element<0>::offset);
+static_assert(offsetof(normal, _1) == normal_traits::element<1>::offset);
+static_assert(offsetof(normal, _2) == normal_traits::element<2>::offset);
+static_assert(offsetof(normal, _3) == normal_traits::element<3>::offset);
+
+
+#pragma pack(push, 1)
+struct packed_1
+{
+    uint8_t _0;
+    uint64_t _1;
+    uint8_t _2;
+    uint16_t _3;
+};
+#pragma pack(pop)
+
+using packed_1_types = std::tuple<decltype(packed_1{}._0),
+                                decltype(packed_1{}._1),
+                                decltype(packed_1{}._2),
+                                decltype(packed_1{}._3)>;
+using packed_1_traits = pod_traits<packed_1, packed_1_types>;
+
+static_assert(offsetof(packed_1, _0) == packed_1_traits::element<0>::packed_offset);
+static_assert(offsetof(packed_1, _1) == packed_1_traits::element<1>::packed_offset);
+static_assert(offsetof(packed_1, _2) == packed_1_traits::element<2>::packed_offset);
+static_assert(offsetof(packed_1, _3) == packed_1_traits::element<3>::packed_offset);
+
+// using Types = std::tuple<int8_t, uint64_t, uint8_t, uint16_t>;
+
+// template<class... Ts>
+// struct Foo {
+//     Ts...;
+// };
+
+using std::cout, std::endl;
 
 int main(int argc, const char *argv[]) {
-    // The sample problem. We store the graph as a adjacency list
-    // using a multimap.
-    std::multimap<int, int> edges {
-        { 0, 1 },
-        { 0, 2 },
-        { 1, 4 },
-        { 2, 3 },
-        { 4, 3 },
-        { 0, 4 }
-    };
-    
-    // How many vertices?
-    int max_vertex{};
-    for (auto [a, b] : edges) {
-        max_vertex = std::max(max_vertex, a);
-        max_vertex = std::max(max_vertex, b);
-    }
-    int number_vertices = max_vertex + 1;
 
-    // Initialize the distance from source to each vertex as MAX_INT.
-    int source{};
-    std::vector<int> distance(number_vertices, std::numeric_limits<int>::max());
-
-    // Initialize distance to source and priority queue
-    MinQueue pq;
-    distance[source] = 0;
-    pq.emplace(0, source);
-
-    while (!pq.empty()) {
-        auto [udist, udx] = pq.top();
-        pq.pop();
-
-        // Iterate over all neighbors of vdx
-        auto [begin, end] = edges.equal_range(udx);
-        for (auto iter = begin; iter != end; ++iter) {
-            auto vdx = iter->second, vdist = iter->first;
-
-            // If there is a shorter path, record it
-	    if (udist + vdist < distance[vdx]) {
-		distance[vdx] = udist + vdist;
-		pq.push({udist, vdx});
-	    }
-	}
-    }
-
-    // distance now contains the shortest distance between source and each node
-    for (auto i = 0; i < number_vertices; ++i)
-	std::cout << distance[i] << std::endl;
-    
+    cout << offsetof(normal, _0) << endl;
+    cout << offsetof(normal, _1) << endl;
+    cout << offsetof(normal, _2) << endl;
+    cout << offsetof(normal, _3) << endl;
+    cout << endl;
+    cout << offsetof(packed_1, _0) << endl;
+    cout << offsetof(packed_1, _1) << endl;
+    cout << offsetof(packed_1, _2) << endl;
+    cout << offsetof(packed_1, _3) << endl;
+    cout << endl;
+    cout << packed_1_traits::element<0>::packed_offset << endl;
+    cout << packed_1_traits::element<1>::packed_offset << endl;
+    cout << packed_1_traits::element<2>::packed_offset << endl;
+    cout << packed_1_traits::element<3>::packed_offset << endl;
     return 0;
 }
