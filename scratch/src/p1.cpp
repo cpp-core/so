@@ -1,51 +1,48 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
 
-#include <chrono>
 #include <iostream>
-#include <mutex>
-#include <queue>
-#include <set>
-#include <thread>
-#include <vector>
 
 using std::cin, std::cout, std::endl;
-using namespace std::chrono_literals;
 
-using PlayerId = int;
-using Queue = std::queue<PlayerId>;
-using Players = std::set<PlayerId>;
+struct Human {
+};
 
-int main(int argc, const char *argv[]) {
-    int initial_number_players{};
-    cin >> initial_number_players;
+struct Male : public Human {
+};
 
-    Players players;
-    for (auto i = 0; i < initial_number_players; ++i)
-        players.insert(i);
+struct Female : public Human {
+};
 
-    while (players.size() > 1) {
-        Queue queue;
-        std::vector<std::thread> threads;
+// some functions can handle all humans
+void human_func(Human& h) {
+    // ...
+}
 
-        std::atomic<int> chairs{}, loser{};
-        for (auto pid : players) {
-            threads.emplace_back([&,pid]() {
-                std::this_thread::sleep_for(250ms);
-                auto cid = chairs.fetch_add(1);
-                if (cid == players.size() / 2)
-                    loser = pid;
-            });
-        }
-        for (auto& th : threads)
-            if (th.joinable())
-                th.join();
+// some only take a subset of humans
+void male_func(Male& m) {
+    // ...
+}
 
-        cout << "Player " << loser << " did not capture a chair" << endl;
-        players.erase(loser);
-    }
+void female_func(Female& m) {
+    // ...
+}
 
-    cout << "Player " << *players.begin() << " won" << endl;
+// and user only uses values of Human as token
 
-    return 0;
+int main() {
+    auto human = Human{};
+    human_func(human);
+    // male_func(human); This would not compile
+    // female_func(human); This would not compile
+
+    auto male = Male{};
+    human_func(male);
+    male_func(male);
+    // female_func(male); This would not compile
+
+    auto female = Female{};
+    human_func(female);
+    // male_func(female); This would not compile
+    female_func(female);
 }

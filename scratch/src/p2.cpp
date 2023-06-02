@@ -3,51 +3,51 @@
 
 #include <algorithm>
 #include <iostream>
+#include <cmath>
+#include <chrono>
+#include <iostream>
+#include <memory>
+#include "nanobench.h"
 
 using std::cin, std::cout, std::endl;
 
-void algo() {
-    int n, k;
-    cin >> n >> k;
-    
-    int a[n], s[n], sum = 0, ans = 0, ans1;
-    for(int i = 0; i < n; i++)
-	cin >> a[i], sum += a[i], s[i] = sum;
-    
-    if (k == n) {
-        cout << sum << endl;
-        return;
-    }
-    
-    for (int i = n - 1; i >= 0; i--) {
-        if(i - k >= 0)
-            ans1 = s[i] - s[i-k];
-        ans = std::max(ans, ans1);
-    }
-    
-    cout << ans << endl;
+template<class T>
+auto clamp(const T& v, const T& lo, const T& hi) {
+    return v < lo ? lo : hi < v ? hi : v;
 }
 
-int main(int argc, const char *argv[]) {
-    int count, k;
-    cin >> count >> k;
-
-    int sum{};
-    int arr[k];
-    for (auto i = 0; i < k; ++i) {
-	cin >> arr[i];
-	sum += arr[i];
+template<class Op>
+void func(uint8_t *mem, Op&& op)
+{
+    for (int i = 0; i != 720; ++i) {
+        for (int j = 0; j != 1280; ++j) {
+            for (int k = 0; k != 3; ++k) {
+                float tmp = i + j + k;
+		*mem++ = op(tmp);
+            }
+        }
     }
+}
 
-    int max_sum{sum};
-    for (auto i = k; i < count; ++i) {
-	auto idx = i % k;
-	sum -= arr[idx];
-	cin >> arr[idx];
-	sum += arr[idx];
-	max_sum = std::max(max_sum, sum);
-    }
+int main() {
+    std::unique_ptr<uint8_t[]> ptr(new uint8_t[1280 * 720 * 3]);
+    auto *mem = ptr.get();
 
-    cout << max_sum << endl;
-    return 0; 
+    ankerl::nanobench::Bench().run("compare", [&]() {
+	func(mem, [](float x) {
+	    return (x > 0 ? (x < 255 ? x : 255) : 0) + 0.5;
+	});
+    });
+    
+    ankerl::nanobench::Bench().run("round-fminmax", [&]() {
+	func(mem, [](float x) {
+	    return std::round(fmin(255.f, fmax(0.f, x)));
+	});
+    });
+    
+    ankerl::nanobench::Bench().run("clamp", [&]() {
+	func(mem, [](float x) {
+	    return clamp(x + 0.5f, 0.0f, 255.0f);
+	});
+    });
 }

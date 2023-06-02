@@ -19,14 +19,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # Setup compilation before adding dependencies
 #
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(-Wall)
 add_compile_options(-stdlib=libc++)
 add_compile_options(-g)
-#add_compile_options(-O)
+add_compile_options(-O)
 add_link_options(-stdlib=libc++)
 
 add_util()
@@ -35,6 +35,9 @@ add_mdspan()
 add_spdlog()
 add_cc()
 find_package(Eigen3)
+
+set(nanobench_DIR /Users/mmelton/opt/lib/nanobench/cmake)
+find_package(nanobench REQUIRED)
 
 # Add our dependencies
 #
@@ -51,6 +54,6 @@ foreach(prog
     p0 p1 p2 p3 p4 p5 p6 p7 p8 p9
     )
   add_executable(${prog} src/${prog}.cpp)
-  target_link_libraries(${prog} pthread Eigen3::Eigen)
+  target_link_libraries(${prog} pthread Eigen3::Eigen nanobench::nanobench)
 endforeach()
 

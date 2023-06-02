@@ -1,47 +1,83 @@
 // Copyright (C) 2022, 2023 by Mark Melton
 //
-
-#include <algorithm>
+#include <any>
+#include <functional>
+#include <unordered_map>
+#include <string>
 #include <iostream>
-#include <vector>
+#include <memory>
+ 
+class Base;
 
-using std::cout, std::endl;
-
-void subSort(std::vector<int>& array) {
-    int seqStart = 0;
-    for (int i = 0; i < array.size() - 1; i++) {
-        if (array[i] < array[i + 1]) {
-	    std::sort(&array[seqStart], &array[i + 1]);
-            seqStart = i + 1;
-        }
+class myFactory
+{
+public:
+    typedef std::unordered_map<std::string, std::any> registry_map;
+ 
+    virtual ~myFactory() = default;
+ 
+    static registry_map & registry()
+    {
+        static registry_map impl;
+        return impl;
     }
-    std::sort(&array[seqStart], &array[array.size()]);
-}
 
-int main(int argc, const char *argv[]) {
-    // std::vector<int> data = { 53, 50, 41, 8, 64, 35, 17, 76, 58, 3, 75, 1, 99, 56, 2 };
-    std::vector<int> data = { 1, 2, 3, 3, 2, 1 };
-    subSort(data);
-    
-    // int ldx{};
-    // bool was_up{}, was_down{};
-    // for (auto i = 0; i < data.size() - 1; ++i) {
-    // 	bool up = data[i] < data[i+1];
-    // 	bool down = data[i] > data[i+1];
-    // 	if ((was_up and down) or (was_down and up)) {
-    // 	    std::sort(&data[ldx], &data[i+1]);
-    //         ldx = i + 1;
-    // 	    was_down = false;
-    // 	    was_up = false;
-    // 	} else {
-    // 	    was_down = down;
-    // 	    was_up = up;
-    // 	}
-    // }
-    // std::sort(&data[ldx], &data[data.size()]);
+    template<typename ...Ts>
+    static std::shared_ptr<Base> instantiate(std::string const & name, const Ts&...args)
+    {
+	using CreateFunc = std::function<std::shared_ptr<Base>(Ts...)>;
+        auto it = registry().find(name);
+        if ( it == registry().end()) return nullptr;
+        auto& create_fun = std::any_cast<CreateFunc&>(it->second);
+        return create_fun(args...);
+    }
 
-    for (auto elem : data)
-	cout << elem << " ";
+    template<typename F>
+    static bool sign(const std::string& name, F* func)
+    {
+        registry()[name] = std::function<F>(func);
+        return true;
+    }
+};
+ 
+class Base: public myFactory
+{
+    public:
+        Base(int a):var1(a){}
+        Base(int a, int b):var1(a+b){}
+        virtual ~Base() = default;
+        virtual void f() = 0;
+        int var(){return var1;}
     
+    private:
+        int var1;
+};
+ 
+class DerivedExample : public Base
+{
+private:
+    static bool sign1;
+    static bool sign2;
+
+public:
+    DerivedExample(int a):Base(a){std::cout << var()<< std::endl;}
+    DerivedExample(int a, int b):Base(a,b){std::cout << a << b << std::endl;}
+    
+    static std::shared_ptr<Base> create(int a) { return std::make_shared<DerivedExample>(a);}
+    static std::shared_ptr<Base> create(int a, int b) { return std::make_shared<DerivedExample>(a,b);}
+
+    virtual void f() override { std::cout << "DerivedExample" << std::endl; }
+};
+
+bool DerivedExample::sign1 = DerivedExample::myFactory::sign("DerivedExample1", static_cast<std::shared_ptr<Base> (*)(int)>(&DerivedExample::create));
+bool DerivedExample::sign2 = DerivedExample::myFactory::sign("DerivedExample1", static_cast<std::shared_ptr<Base> (*)(int, int)>(&DerivedExample::create));
+
+
+int main()
+{
+    std::shared_ptr<Base> p1 = Base::instantiate("DerivedExample1", 10);
+    std::shared_ptr<Base> p2 = Base::instantiate("DerivedExample1", 1, 2);
+    p1->f();
+    p2->f();
     return 0;
 }
